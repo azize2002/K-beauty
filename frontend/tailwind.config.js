@@ -13,6 +13,13 @@ module.exports = {
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		colors: {
+  			// Modern Korean Luxury palette
+  			ivory: '#F9F7F4',
+  			charcoal: '#1C1C1C',
+  			gold: '#C8A75E',
+  			stone: '#B7B4AE',
+  			marble: '#E6E1D9',
+  			// Semantic colors using CSS variables
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {
