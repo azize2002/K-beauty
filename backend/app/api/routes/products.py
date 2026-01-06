@@ -33,6 +33,10 @@ def load_products_from_json():
                 if "format" in product and "volume" not in product:
                     product["volume"] = product["format"]
                 
+                # ✅ NOUVEAU : Initialiser is_bestseller si absent
+                if "is_bestseller" not in product:
+                    product["is_bestseller"] = False
+                
                 if "created_at" in product and isinstance(product["created_at"], str):
                     try:
                         product["created_at"] = datetime.fromisoformat(product["created_at"].replace("Z", "+00:00"))
@@ -54,8 +58,6 @@ def load_products_from_json():
         print(f"Error parsing products.json: {e}")
         products_store = []
         return 0
-
-
 
 
 @router.get("/products", response_model=ProductListResponse)
@@ -106,6 +108,21 @@ async def get_products(
         limit=limit,
         offset=offset
     )
+
+
+# ✅ NOUVEAU : Endpoint pour récupérer uniquement les best-sellers
+@router.get("/products/bestsellers", response_model=List[Product])
+async def get_bestsellers(
+    limit: int = Query(8, ge=1, le=20, description="Number of bestsellers to return")
+):
+    """Get bestseller products only."""
+    bestsellers = [p for p in products_store if p.get("is_bestseller", False)]
+    
+    # Limiter le nombre de résultats
+    bestsellers = bestsellers[:limit]
+    
+    # Convertir en modèles Pydantic
+    return [Product(**product) for product in bestsellers]
 
 
 @router.get("/products/{product_id}", response_model=Product)

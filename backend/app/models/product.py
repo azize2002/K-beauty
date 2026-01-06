@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 from typing import Optional
 import uuid
 
-
 class Product(BaseModel):
     """Product model."""
     model_config = ConfigDict(extra="ignore")
@@ -22,7 +21,7 @@ class Product(BaseModel):
     rating: Optional[float] = None
     review_count: Optional[int] = None
     is_new: bool = False
+    is_bestseller: bool = False  # ✅ NOUVEAU CHAMP
     in_stock: bool = True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-

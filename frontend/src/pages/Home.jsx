@@ -8,25 +8,26 @@ const Home = () => {
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Images de catégories avec les VRAIES catégories de la DB
   const categories = [
-    { name: 'Sérums', slug: 'serum', image: '/images/categories/serum.jpg' },
-    { name: 'Crèmes', slug: 'moisturizer', image: '/images/categories/cream.jpg' },
-    { name: 'Nettoyants', slug: 'cleanser', image: '/images/categories/cleanser.jpg' },
-    { name: 'Masques', slug: 'mask', image: '/images/categories/mask.jpg' },
-    { name: 'Protection Solaire', slug: 'sunscreen', image: '/images/categories/sunscreen.jpg' },
-    { name: 'Toners', slug: 'toner', image: '/images/categories/toner.jpg' },
+    { name: 'Sérums', slug: 'Serum', image: '/images/categories/serums.png' },
+    { name: 'Crèmes', slug: 'Moisturizer', image: '/images/categories/cremes.png' },
+    { name: 'Nettoyants', slug: 'Foam Cleanser', image: '/images/categories/nettoyants.png' },
+    { name: 'Masques', slug: 'Sheet Mask', image: '/images/categories/masques.png' },
+    { name: 'Protection Solaire', slug: 'Sunscreen', image: '/images/categories/protection-solaire.png' },
+    { name: 'Toners', slug: 'Toner', image: '/images/categories/toners.png' },
   ];
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [productsRes, brandsRes] = await Promise.all([
-          fetch('http://localhost:8000/api/products?limit=6' ),
-          fetch('http://localhost:8000/api/brands' ),
+          fetch('http://localhost:8000/api/products/bestsellers?limit=8'),
+          fetch('http://localhost:8000/api/brands'),
         ]);
         const productsData = await productsRes.json();
         const brandsData = await brandsRes.json();
-        setFeaturedProducts(productsData.products || []);
+        setFeaturedProducts(productsData || []);
         setBrands(brandsData || []);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -86,14 +87,20 @@ const Home = () => {
               <Link
                 key={category.slug}
                 to={`/products?category=${category.slug}`}
-                className="group bg-white border border-marble rounded-lg p-4 text-center hover:shadow-lg transition-shadow duration-200"
+                className="group bg-white border border-marble rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200"
               >
-                <div className="w-16 h-16 mx-auto mb-3 bg-marble rounded-full flex items-center justify-center">
-                  <span className="text-2xl">✨</span>
+                <div className="aspect-square overflow-hidden">
+                  <img
+                    src={category.image}
+                    alt={category.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
                 </div>
-                <p className="text-charcoal font-medium group-hover:text-gold transition-colors">
-                  {category.name}
-                </p>
+                <div className="p-4 text-center">
+                  <p className="text-charcoal font-medium group-hover:text-gold transition-colors">
+                    {category.name}
+                  </p>
+                </div>
               </Link>
             ))}
           </div>
