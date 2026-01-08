@@ -21,7 +21,12 @@ class Product(BaseModel):
     rating: Optional[float] = None
     review_count: Optional[int] = None
     is_new: bool = False
-    is_bestseller: bool = False  # ✅ NOUVEAU CHAMP
+    is_bestseller: bool = False
     in_stock: bool = True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    
+    # 🔴 AJOUTEZ CES NOUVEAUX CHAMPS :
+    price_eur: Optional[float] = None
+    price_tnd: Optional[int] = None
+    original_price_tnd: Optional[int] = None

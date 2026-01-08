@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import ProductCard from '../components/product/ProductCard';
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -8,12 +9,10 @@ const Products = () => {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    // Récupérer les paramètres de filtrage depuis l'URL
     const category = searchParams.get('category');
     const brand = searchParams.get('brand');
     const search = searchParams.get('search');
 
-    // Construire l'URL de l'API avec les filtres
     let apiUrl = 'http://localhost:8000/api/products?limit=200';
     
     if (category) {
@@ -26,7 +25,6 @@ const Products = () => {
       apiUrl += `&search=${encodeURIComponent(search)}`;
     }
 
-    // Appel API avec filtres
     fetch(apiUrl)
       .then(response => {
         if (!response.ok) {
@@ -43,9 +41,8 @@ const Products = () => {
         setError(error.message);
         setLoading(false);
       });
-  }, [searchParams]); // Re-fetch quand les paramètres changent
+  }, [searchParams]);
 
-  // Générer le titre dynamique selon les filtres
   const getPageTitle = () => {
     const category = searchParams.get('category');
     const brand = searchParams.get('brand');
@@ -109,70 +106,7 @@ const Products = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {products.map(product => (
-              <div 
-                key={product.id} 
-                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300"
-              >
-                <div className="aspect-square bg-gray-100 flex items-center justify-center">
-                  {product.image_url ? (
-                    <img 
-                      src={product.image_url}
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.src = 'https://via.placeholder.com/300x300?text=No+Image';
-                      }}
-                    />
-                  ) : (
-                    <span className="text-gray-400">Pas d'image</span>
-                  )}
-                </div>
-                
-                <div className="p-4">
-                  <h3 className="font-medium text-charcoal mb-1 line-clamp-2">
-                    {product.name}
-                  </h3>
-                  
-                  <p className="text-sm text-stone mb-2">
-                    {product.brand}
-                  </p>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      {product.discount_percentage > 0 ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg font-semibold text-rose-600">
-                            {product.price}€
-                          </span>
-                          <span className="text-sm text-gray-400 line-through">
-                            {product.original_price}€
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-lg font-semibold text-charcoal">
-                          {product.price}€
-                        </span>
-                      )}
-                    </div>
-                    
-                    {product.discount_percentage > 0 && (
-                      <span className="bg-rose-100 text-rose-600 text-xs px-2 py-1 rounded">
-                        -{product.discount_percentage}%
-                      </span>
-                    )}
-                  </div>
-                  
-                  {product.in_stock ? (
-                    <span className="inline-block mt-2 text-xs text-green-600">
-                      En stock
-                    </span>
-                  ) : (
-                    <span className="inline-block mt-2 text-xs text-red-600">
-                      Rupture de stock
-                    </span>
-                  )}
-                </div>
-              </div>
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         )}

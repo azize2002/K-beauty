@@ -1,29 +1,188 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ShoppingCart, Check, X } from 'lucide-react';
+import { useCart } from '../../contexts/CartContext';
 
 const ProductCard = ({ product }) => {
+  const { addToCart, isInCart } = useCart();
+  const [showModal, setShowModal] = useState(false);
+  const navigate = useNavigate();
+
   if (!product) return null;
-  const { id, name, brand, price, original_price, image_url, format, is_new } = product;
-  const hasDiscount = original_price && original_price > price;
+
+  const { 
+    id, 
+    name, 
+    brand, 
+    price_tnd,
+    price,
+    original_price_tnd,
+    original_price,
+    discount_percentage,
+    image_url, 
+    volume,
+    is_new,
+    in_stock 
+  } = product;
+
+  // Utiliser price_tnd ou price selon ce qui est disponible
+  const displayPrice = price_tnd || price || 0;
+  const displayOriginalPrice = original_price_tnd || original_price || displayPrice;
+  
+  // CORRECTION: Convertir en nombre et vérifier strictement > 0
+  const discountValue = Number(discount_percentage) || 0;
+  const hasDiscount = discountValue > 0 && displayOriginalPrice > displayPrice;
+  
+  const inCart = isInCart(id);
+
+  const handleAddToCart = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!in_stock) return;
+    
+    addToCart(product);
+    setShowModal(true);
+  };
+
+  const handleGoToCart = () => {
+    setShowModal(false);
+    navigate('/cart');
+  };
+
+  const handleContinueShopping = () => {
+    setShowModal(false);
+  };
 
   return (
-    <Link to={`/products/${id}`} className="group block">
-      <div className="bg-white border border-marble rounded-lg p-4 transition-all duration-300 hover:shadow-lg">
-        <div className="relative aspect-square overflow-hidden rounded-lg mb-3 bg-marble/30">
-          <img src={image_url || '/images/products/placeholder.png'} alt={name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" onError={(e) => { e.target.src = '/images/products/placeholder.png'; }} />
-          {is_new && <div className="absolute top-2 left-2 bg-gold text-charcoal px-2 py-1 rounded text-xs font-semibold">Nouveau</div>}
+    <>
+      <Link to={`/products/${id}`} className="group block">
+        <div className="bg-white border border-marble rounded-lg p-4 transition-all duration-300 hover:shadow-lg relative">
+          {/* Image */}
+          <div className="relative aspect-square overflow-hidden rounded-lg mb-3 bg-marble/30">
+            <img 
+              src={image_url || '/images/products/placeholder.png'} 
+              alt={name} 
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+              onError={(e) => { 
+                e.target.src = '/images/products/placeholder.png'; 
+              }} 
+            />
+            
+            {/* Badges - SEULEMENT si is_new ou hasDiscount sont TRUE */}
+            {(is_new || hasDiscount) && (
+              <div className="absolute top-2 left-2 flex flex-col gap-1">
+                {is_new && (
+                  <div className="bg-gold text-charcoal px-2 py-1 rounded text-xs font-semibold">
+                    Nouveau
+                  </div>
+                )}
+                {hasDiscount && (
+                  <div className="bg-red-500 text-white px-2 py-1 rounded text-xs font-semibold">
+                    -{discountValue}%
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Stock status */}
+            {!in_stock && (
+              <div className="absolute inset-0 bg-charcoal/60 flex items-center justify-center">
+                <span className="text-white font-semibold">Rupture de stock</span>
+              </div>
+            )}
+          </div>
+
+          {/* Info produit */}
+          <div className="space-y-1">
+            {brand && (
+              <p className="text-xs text-stone uppercase tracking-wide">{brand}</p>
+            )}
+            <h3 className="text-charcoal font-medium text-sm line-clamp-2 min-h-[40px]">
+              {name}
+            </h3>
+            {volume && (
+              <p className="text-xs text-stone">{volume}</p>
+            )}
+            
+            {/* Prix */}
+            <div className="flex items-baseline gap-2 pt-2">
+              <span className="text-gold font-bold text-lg">{displayPrice} TND</span>
+              {hasDiscount && (
+                <span className="text-xs text-stone line-through">
+                  {displayOriginalPrice} TND
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Bouton Ajouter au panier */}
+          <button
+            onClick={handleAddToCart}
+            disabled={!in_stock}
+            className={`
+              w-full mt-4 py-2 rounded-lg font-medium text-sm
+              flex items-center justify-center gap-2
+              transition-all duration-200
+              ${!in_stock 
+                ? 'bg-marble text-stone cursor-not-allowed' 
+                : inCart
+                  ? 'bg-gold/20 text-gold border border-gold hover:bg-gold hover:text-charcoal'
+                  : 'bg-gold text-charcoal hover:bg-gold/90'
+              }
+            `}
+          >
+            <ShoppingCart size={18} />
+            <span>{inCart ? 'Déjà dans le panier' : 'Ajouter au panier'}</span>
+          </button>
         </div>
-        <div className="space-y-1">
-          {brand && <p className="text-xs text-stone uppercase tracking-wide">{brand}</p>}
-          <h3 className="text-charcoal font-medium text-sm line-clamp-2 min-h-[40px]">{name}</h3>
-          {format && <p className="text-xs text-stone">{format}</p>}
-          <div className="flex items-baseline gap-2 pt-2">
-            <span className="text-gold font-bold text-lg">{price} TND</span>
-            {hasDiscount && <span className="text-xs text-stone line-through">{original_price} TND</span>}
+      </Link>
+
+      {/* MODAL : Ajouté au panier */}
+      {showModal && (
+        <div className="fixed inset-0 bg-charcoal/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-xl relative">
+            {/* Bouton fermer */}
+            <button
+              onClick={handleContinueShopping}
+              className="absolute top-3 right-3 text-stone hover:text-charcoal"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Check size={28} className="text-green-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-charcoal mb-2">
+                Ajouté au panier !
+              </h3>
+              <p className="text-stone text-sm line-clamp-2">
+                {name}
+              </p>
+              <p className="text-gold font-semibold mt-1">
+                {displayPrice} TND
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={handleGoToCart}
+                className="w-full bg-gold text-charcoal py-2.5 rounded-lg font-semibold text-sm hover:bg-gold/90 transition-colors"
+              >
+                Voir le panier
+              </button>
+              <button
+                onClick={handleContinueShopping}
+                className="w-full border border-gold text-gold py-2.5 rounded-lg font-semibold text-sm hover:bg-gold/10 transition-colors"
+              >
+                Continuer mes achats
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    </Link>
+      )}
+    </>
   );
 };
 

@@ -1,9 +1,13 @@
 """Database connection configuration."""
 from motor.motor_asyncio import AsyncIOMotorClient
-from app.core.config import MONGO_URL, DB_NAME
+import os
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Configuration directe (fallback si .env ne fonctionne pas)
+MONGO_URL = os.environ.get('MONGO_URL') or os.environ.get('MONGO_URI') or 'mongodb://localhost:27017'
+DB_NAME = os.environ.get('DB_NAME') or 'kbeauty'
 
 # Global database client
 client: AsyncIOMotorClient = None
@@ -16,7 +20,7 @@ async def get_database():
     if client is None:
         client = AsyncIOMotorClient(MONGO_URL)
         db = client[DB_NAME]
-        logger.info("Database connection established")
+        logger.info(f"Database connection established to {DB_NAME}")
     return db
 
 
@@ -26,4 +30,3 @@ async def close_database():
     if client:
         client.close()
         logger.info("Database connection closed")
-

@@ -1,106 +1,89 @@
-"""Product routes."""
+"""Product routes - Reading from MongoDB."""
 from fastapi import APIRouter, HTTPException, Query
-from pathlib import Path
-import json
 from typing import List, Optional
-from datetime import datetime
-
+from pymongo import MongoClient
 from app.models.product import Product
 from app.schemas.product import ProductListResponse, BrandWithCount, CategoryWithCount
 
 router = APIRouter()
 
-# In-memory storage for products
-products_store: List[dict] = []
+# Connexion MongoDB synchrone
+mongo_client = MongoClient("mongodb://localhost:27017")
+db = mongo_client.kbeauty
 
 
 def load_products_from_json():
-    """Load products from JSON file."""
-    global products_store
-    
-    # Get the path to products.json relative to this file
-    backend_dir = Path(__file__).parent.parent.parent.parent
-    products_file = backend_dir / "data" / "products.json"
-    
-    try:
-        with open(products_file, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            products = data.get("products", [])
-            
-            # Convert datetime strings to datetime objects and map fields
-            for product in products:
-                # Map "format" to "volume" if format exists and volume doesn't
-                if "format" in product and "volume" not in product:
-                    product["volume"] = product["format"]
-                
-                # ✅ NOUVEAU : Initialiser is_bestseller si absent
-                if "is_bestseller" not in product:
-                    product["is_bestseller"] = False
-                
-                if "created_at" in product and isinstance(product["created_at"], str):
-                    try:
-                        product["created_at"] = datetime.fromisoformat(product["created_at"].replace("Z", "+00:00"))
-                    except (ValueError, AttributeError):
-                        pass  # Keep as string if parsing fails
-                if "updated_at" in product and isinstance(product["updated_at"], str):
-                    try:
-                        product["updated_at"] = datetime.fromisoformat(product["updated_at"].replace("Z", "+00:00"))
-                    except (ValueError, AttributeError):
-                        pass  # Keep as string if parsing fails
-            
-            products_store = products
-        return len(products_store)
-    except FileNotFoundError:
-        print(f"Warning: Products file not found at {products_file}")
-        products_store = []
-        return 0
-    except json.JSONDecodeError as e:
-        print(f"Error parsing products.json: {e}")
-        products_store = []
-        return 0
+    """Kept for compatibility - now we use MongoDB directly."""
+    count = db.products.count_documents({})
+    print(f"✅ Products API configured to read from MongoDB ({count} products)")
+    return count
 
 
 @router.get("/products", response_model=ProductListResponse)
 async def get_products(
     brand: Optional[str] = Query(None, description="Filter by brand name"),
     category: Optional[str] = Query(None, description="Filter by category name"),
-    min_price: Optional[int] = Query(None, description="Minimum price filter"),
-    max_price: Optional[int] = Query(None, description="Maximum price filter"),
+    min_price: Optional[int] = Query(None, description="Minimum price filter (TND)"),
+    max_price: Optional[int] = Query(None, description="Maximum price filter (TND)"),
     search: Optional[str] = Query(None, description="Search in product name"),
     limit: int = Query(20, ge=1, le=500, description="Number of products to return"),
     offset: int = Query(0, ge=0, description="Number of products to skip")
 ):
-    """Get all products with optional filters."""
-    # Filter products
-    filtered_products = products_store.copy()
+    """Get all products with optional filters from MongoDB."""
+    
+    # Build query filter
+    query = {}
     
     if brand:
-        filtered_products = [p for p in filtered_products if p.get("brand", "").lower() == brand.lower()]
+        # Case-insensitive brand search
+        query["brand"] = {"$regex": f"^{brand}$", "$options": "i"}
     
     if category:
-        filtered_products = [p for p in filtered_products if p.get("category", "").lower() == category.lower()]
+        # Case-insensitive category search
+        query["category"] = {"$regex": f"^{category}$", "$options": "i"}
     
     if min_price is not None:
-        filtered_products = [p for p in filtered_products if p.get("price", 0) >= min_price]
+        query["price_tnd"] = {"$gte": min_price}
     
     if max_price is not None:
-        filtered_products = [p for p in filtered_products if p.get("price", float("inf")) <= max_price]
+        if "price_tnd" in query:
+            query["price_tnd"]["$lte"] = max_price
+        else:
+            query["price_tnd"] = {"$lte": max_price}
     
     if search:
-        search_lower = search.lower()
-        filtered_products = [
-            p for p in filtered_products 
-            if search_lower in p.get("name", "").lower()
-        ]
+        query["name"] = {"$regex": search, "$options": "i"}
     
-    # Get total count before pagination
-    total = len(filtered_products)
+    # Get total count
+    total = db.products.count_documents(query)
     
-    # Apply pagination
-    paginated_products = filtered_products[offset:offset + limit]
+    # Get products with pagination
+    cursor = db.products.find(query).skip(offset).limit(limit)
+    products = list(cursor)
     
-    # Convert to Pydantic models
-    product_models = [Product(**product) for product in paginated_products]
+    # Convert MongoDB documents to Product models
+    product_models = []
+    for p in products:
+        product_data = {
+            "id": p.get("id"),
+            "name": p.get("name"),
+            "brand": p.get("brand"),
+            "category": p.get("category"),
+            "price_tnd": p.get("price_tnd", 0),
+            "price": p.get("price_tnd", 0),
+            "original_price_tnd": p.get("original_price_tnd", p.get("price_tnd", 0)),
+            "original_price": p.get("original_price_tnd", p.get("price_tnd", 0)),
+            "discount_percentage": p.get("discount_percentage", 0),
+            "description": p.get("description", ""),
+            "image_url": p.get("image_url", "/images/products/placeholder.png"),
+            "volume": p.get("format") or p.get("volume", ""),
+            "in_stock": p.get("in_stock", True),
+            "is_new": p.get("is_new", False),
+            "is_bestseller": p.get("is_bestseller", False),
+            "rating": p.get("rating"),
+            "review_count": p.get("review_count", 0),
+        }
+        product_models.append(Product(**product_data))
     
     return ProductListResponse(
         products=product_models,
@@ -110,75 +93,120 @@ async def get_products(
     )
 
 
-# ✅ NOUVEAU : Endpoint pour récupérer uniquement les best-sellers
 @router.get("/products/bestsellers", response_model=List[Product])
 async def get_bestsellers(
     limit: int = Query(8, ge=1, le=20, description="Number of bestsellers to return")
 ):
-    """Get bestseller products only."""
-    bestsellers = [p for p in products_store if p.get("is_bestseller", False)]
+    """Get bestseller products only from MongoDB."""
     
-    # Limiter le nombre de résultats
-    bestsellers = bestsellers[:limit]
+    cursor = db.products.find({"is_bestseller": True}).limit(limit)
+    products = list(cursor)
     
-    # Convertir en modèles Pydantic
-    return [Product(**product) for product in bestsellers]
+    product_models = []
+    for p in products:
+        product_data = {
+            "id": p.get("id"),
+            "name": p.get("name"),
+            "brand": p.get("brand"),
+            "category": p.get("category"),
+            "price_tnd": p.get("price_tnd", 0),
+            "price": p.get("price_tnd", 0),
+            "original_price_tnd": p.get("original_price_tnd", p.get("price_tnd", 0)),
+            "original_price": p.get("original_price_tnd", p.get("price_tnd", 0)),
+            "discount_percentage": p.get("discount_percentage", 0),
+            "description": p.get("description", ""),
+            "image_url": p.get("image_url", "/images/products/placeholder.png"),
+            "volume": p.get("format") or p.get("volume", ""),
+            "in_stock": p.get("in_stock", True),
+            "is_new": p.get("is_new", False),
+            "is_bestseller": p.get("is_bestseller", False),
+            "rating": p.get("rating"),
+            "review_count": p.get("review_count", 0),
+        }
+        product_models.append(Product(**product_data))
+    
+    return product_models
 
 
 @router.get("/products/{product_id}", response_model=Product)
 async def get_product(product_id: str):
-    """Get a single product by ID."""
-    product = next((p for p in products_store if p.get("id") == product_id), None)
+    """Get a single product by ID from MongoDB."""
     
-    if not product:
+    p = db.products.find_one({"id": product_id})
+    
+    if not p:
         raise HTTPException(status_code=404, detail="Product not found")
     
-    return Product(**product)
+    product_data = {
+        "id": p.get("id"),
+        "name": p.get("name"),
+        "brand": p.get("brand"),
+        "category": p.get("category"),
+        "price_tnd": p.get("price_tnd", 0),
+        "price": p.get("price_tnd", 0),
+        "original_price_tnd": p.get("original_price_tnd", p.get("price_tnd", 0)),
+        "original_price": p.get("original_price_tnd", p.get("price_tnd", 0)),
+        "discount_percentage": p.get("discount_percentage", 0),
+        "description": p.get("description", ""),
+        "image_url": p.get("image_url", "/images/products/placeholder.png"),
+        "volume": p.get("format") or p.get("volume", ""),
+        "in_stock": p.get("in_stock", True),
+        "is_new": p.get("is_new", False),
+        "is_bestseller": p.get("is_bestseller", False),
+        "rating": p.get("rating"),
+        "review_count": p.get("review_count", 0),
+    }
+    
+    return Product(**product_data)
 
 
 @router.get("/brands", response_model=List[BrandWithCount])
 async def get_brands():
-    """Get all unique brands with product count."""
-    # Count products per brand
-    brand_counts = {}
-    for product in products_store:
-        brand_name = product.get("brand")
-        if brand_name:
-            brand_counts[brand_name] = brand_counts.get(brand_name, 0) + 1
+    """Get all unique brands with product count from MongoDB."""
     
-    # Create brand objects with counts
+    # Aggregation to count products per brand
+    pipeline = [
+        {"$group": {"_id": "$brand", "count": {"$sum": 1}}},
+        {"$sort": {"_id": 1}}
+    ]
+    
+    result = list(db.products.aggregate(pipeline))
+    
     brands = []
-    for brand_name in sorted(brand_counts.keys()):
-        brand = BrandWithCount(
-            name=brand_name,
-            slug=brand_name.lower().replace(" ", "-"),
-            logo_url="",  # Logo URL would need to be stored separately
-            product_count=brand_counts[brand_name]
-        )
-        brands.append(brand)
+    for item in result:
+        if item["_id"]:  # Skip None brands
+            brand = BrandWithCount(
+                name=item["_id"],
+                slug=item["_id"].lower().replace(" ", "-"),
+                logo_url="",
+                product_count=item["count"]
+            )
+            brands.append(brand)
     
     return brands
 
 
 @router.get("/categories", response_model=List[CategoryWithCount])
 async def get_categories():
-    """Get all unique categories with product count."""
-    # Count products per category
-    category_counts = {}
-    for product in products_store:
-        category_name = product.get("category")
-        if category_name:
-            category_counts[category_name] = category_counts.get(category_name, 0) + 1
+    """Get all unique categories with product count from MongoDB."""
     
-    # Create category objects with counts
+    # Aggregation to count products per category
+    pipeline = [
+        {"$group": {"_id": "$category", "count": {"$sum": 1}}},
+        {"$sort": {"_id": 1}}
+    ]
+    
+    result = list(db.products.aggregate(pipeline))
+    
     categories = []
-    for category_name in sorted(category_counts.keys()):
-        category = CategoryWithCount(
-            name=category_name,
-            slug=category_name.lower().replace(" ", "-"),
-            image_url="",  # Image URL would need to be stored separately
-            product_count=category_counts[category_name]
-        )
-        categories.append(category)
+    for item in result:
+        if item["_id"]:  # Skip None categories
+            category = CategoryWithCount(
+                name=item["_id"],
+                slug=item["_id"].lower().replace(" ", "-"),
+                image_url="",
+                product_count=item["count"]
+            )
+            categories.append(category)
     
     return categories
