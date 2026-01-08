@@ -48,7 +48,7 @@ const About = () => {
               {/* Image thématique K-Beauty */}
               <div className="rounded-2xl overflow-hidden shadow-lg aspect-square">
                 <img 
-                  src="/images/about-hero.jpg" 
+                  src="/images/about-hero.svg" 
                   alt="K-Beauty Skincare"
                   className="w-full h-full object-cover"
                   onError={(e) => {
