@@ -18,6 +18,7 @@ import AdminOrders from "./pages/admin/Orders";
 import AdminProducts from "./pages/admin/Products";
 import AdminClients from "./pages/admin/Clients";
 import About from "./pages/About";
+import OrderDetail from './pages/OrderDetail';
 
 function Layout({ children }) {
   return (
@@ -47,6 +48,7 @@ function App() {
               <Route path="/signup" element={<Signup />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/checkout" element={<Checkout />} />
+              <Route path="/orders/:id" element={<OrderDetail />} />
               {/* Admin Routes */}
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/orders" element={<AdminOrders />} />

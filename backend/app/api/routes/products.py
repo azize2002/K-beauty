@@ -2,6 +2,9 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional
 from pymongo import MongoClient
+from pathlib import Path
+import json
+import unicodedata
 from app.models.product import Product
 from app.schemas.product import ProductListResponse, BrandWithCount, CategoryWithCount
 
@@ -12,9 +15,69 @@ mongo_client = MongoClient("mongodb://localhost:27017")
 db = mongo_client.kbeauty
 
 
+def normalize_text(text):
+    """Retire les accents d'un texte pour une recherche plus flexible."""
+    if not text:
+        return ""
+    return ''.join(
+        c for c in unicodedata.normalize('NFD', text)
+        if unicodedata.category(c) != 'Mn'
+    )
+
+
 def load_products_from_json():
-    """Kept for compatibility - now we use MongoDB directly."""
+    """Load products from JSON file into MongoDB if collection is empty."""
     count = db.products.count_documents({})
+    
+    if count == 0:
+        # Collection is empty, load from JSON
+        json_path = Path(__file__).parent.parent.parent.parent / "data" / "products.json"
+        
+        if not json_path.exists():
+            print(f"⚠️  JSON file not found at: {json_path}")
+            return 0
+        
+        with open(json_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        products = data.get('products', [])
+        
+        if products:
+            # Préparer les documents pour MongoDB
+            docs = []
+            for p in products:
+                doc = {
+                    "id": p.get("id"),
+                    "ref": p.get("ref"),
+                    "name": p.get("name"),
+                    "brand": p.get("brand"),
+                    "category": p.get("category"),
+                    "category_fr": p.get("category_fr"),
+                    "format": p.get("format"),
+                    "price_tnd": p.get("price", p.get("price_tnd", 0)),
+                    "original_price_tnd": p.get("original_price", p.get("original_price_tnd", 0)),
+                    "discount_percentage": p.get("discount_percentage", 0),
+                    "price_eur": p.get("price_eur"),
+                    "image_url": p.get("image_url", "/images/products/placeholder.png"),
+                    "image_file": p.get("image_file"),
+                    "in_stock": p.get("in_stock", True),
+                    "is_new": p.get("is_new", False),
+                    "is_bestseller": p.get("is_bestseller", False),
+                    "rating": p.get("rating"),
+                    "review_count": p.get("review_count", 0),
+                    "description": p.get("description", ""),
+                    "description_short": p.get("description_short", ""),
+                    "created_at": p.get("created_at"),
+                    "updated_at": p.get("updated_at"),
+                }
+                docs.append(doc)
+            
+            db.products.insert_many(docs)
+            count = len(docs)
+            print(f"✅ Imported {count} products from JSON into MongoDB")
+        else:
+            print("⚠️  No products found in JSON file")
+    
     print(f"✅ Products API configured to read from MongoDB ({count} products)")
     return count
 
@@ -52,7 +115,26 @@ async def get_products(
             query["price_tnd"] = {"$lte": max_price}
     
     if search:
-        query["name"] = {"$regex": search, "$options": "i"}
+        # Recherche multi-champs avec et sans accents
+        search_normalized = normalize_text(search)
+        
+        # Chercher le terme original ET le terme sans accents
+        search_patterns = [search]
+        if search_normalized.lower() != search.lower():
+            search_patterns.append(search_normalized)
+        
+        # Construire les conditions $or pour chaque pattern
+        or_conditions = []
+        for pattern in search_patterns:
+            or_conditions.extend([
+                {"name": {"$regex": pattern, "$options": "i"}},
+                {"brand": {"$regex": pattern, "$options": "i"}},
+                {"category": {"$regex": pattern, "$options": "i"}},
+                {"category_fr": {"$regex": pattern, "$options": "i"}},
+                {"description": {"$regex": pattern, "$options": "i"}},
+            ])
+        
+        query["$or"] = or_conditions
     
     # Get total count
     total = db.products.count_documents(query)

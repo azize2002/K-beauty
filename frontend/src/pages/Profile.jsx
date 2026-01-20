@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { User, Mail, Phone, LogOut, ShoppingBag, Package, Clock } from 'lucide-react';
+import { User, Mail, Phone, LogOut, ShoppingBag, Package, Clock, ChevronRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 
@@ -8,6 +8,7 @@ const Profile = () => {
   const { user, isAuthenticated, logout, token } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
+  const [changedOrders, setChangedOrders] = useState(new Set());
 
   // Charger les commandes
   useEffect(() => {
@@ -25,7 +26,28 @@ const Profile = () => {
         })
         .then(data => {
           // S'assurer que data est bien un tableau
-          setOrders(Array.isArray(data) ? data : []);
+          const ordersArray = Array.isArray(data) ? data : [];
+          setOrders(ordersArray);
+          
+          // Récupérer les statuts vus précédemment
+          const previousStatuses = JSON.parse(localStorage.getItem('kbeauty_seen_statuses') || '{}');
+          
+          // Détecter les commandes avec changement de statut
+          const changed = new Set();
+          ordersArray.forEach(order => {
+            if (previousStatuses[order.id] && previousStatuses[order.id] !== order.status) {
+              changed.add(order.id);
+            }
+          });
+          setChangedOrders(changed);
+          
+          // Marquer tous les statuts comme vus
+          const seenStatuses = {};
+          ordersArray.forEach(order => {
+            seenStatuses[order.id] = order.status;
+          });
+          localStorage.setItem('kbeauty_seen_statuses', JSON.stringify(seenStatuses));
+          
           setLoadingOrders(false);
         })
         .catch(err => {
@@ -99,7 +121,7 @@ const Profile = () => {
             </div>
             <div className="flex items-center gap-3 text-charcoal">
               <Phone size={20} className="text-stone" />
-              <span>{user?.phone}</span>
+              <span>{user?.phone || 'Non renseigné'}</span>
             </div>
           </div>
         </div>
@@ -128,16 +150,30 @@ const Profile = () => {
             <div className="space-y-4">
               {orders.map(order => {
                 const status = getStatusLabel(order.status);
+                const hasChanged = changedOrders.has(order.id);
                 return (
-                  <div
+                  <Link
                     key={order.id}
-                    className="border border-marble rounded-lg p-4 hover:border-gold/50 transition-colors"
+                    to={`/orders/${order.id}`}
+                    className={`block border rounded-lg p-4 hover:border-gold hover:shadow-md transition-all cursor-pointer group ${
+                      hasChanged ? 'border-gold bg-gold/5' : 'border-marble'
+                    }`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold text-gold">{order.order_number}</span>
-                      <span className={`text-xs px-2 py-1 rounded-full ${status.color}`}>
-                        {status.text}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-gold">{order.order_number}</span>
+                        {hasChanged && (
+                          <span className="text-xs bg-gold text-white px-2 py-0.5 rounded-full animate-pulse">
+                            Mise à jour
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs px-2 py-1 rounded-full ${status.color}`}>
+                          {status.text}
+                        </span>
+                        <ChevronRight size={18} className="text-stone group-hover:text-gold transition-colors" />
+                      </div>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2 text-stone">
@@ -151,7 +187,7 @@ const Profile = () => {
                     <p className="text-xs text-stone mt-2">
                       {order.items_count} article{order.items_count > 1 ? 's' : ''}
                     </p>
-                  </div>
+                  </Link>
                 );
               })}
             </div>
@@ -159,10 +195,9 @@ const Profile = () => {
         </div>
 
         {/* Actions */}
-        
-          <div className="space-y-4">
-            {/* Lien Admin (si admin) */}
-            {user?.role === 'admin' && (
+        <div className="space-y-4">
+          {/* Lien Admin (si admin) */}
+          {user?.role === 'admin' && (
             <Link
               to="/admin"
               className="flex items-center gap-3 bg-gold text-charcoal rounded-lg p-4 hover:bg-gold/90 transition-colors font-semibold"
@@ -170,13 +205,8 @@ const Profile = () => {
               <Package size={20} />
               <span>Panel Administrateur</span>
             </Link>
-            )}
+          )}
 
-
-
-
-
-        
           <Link
             to="/cart"
             className="flex items-center gap-3 bg-white rounded-lg border border-marble p-4 hover:border-gold transition-colors"

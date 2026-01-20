@@ -147,8 +147,8 @@ const Home = () => {
           <h2 className="text-3xl font-light text-charcoal text-center mb-12">
             Nos Marques Partenaires
           </h2>
-          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-            {brands.slice(0, 12).map((brand) => (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+            {brands.slice(0, 10).map((brand) => (
               <Link
                 key={brand.name || brand}
                 to={`/products?brand=${brand.name || brand}`}

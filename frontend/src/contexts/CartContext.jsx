@@ -11,20 +11,24 @@ export const useCart = () => {
 };
 
 export const CartProvider = ({ children }) => {
-  const [cart, setCart] = useState([]);
-
-  useEffect(() => {
+  // Initialiser directement depuis localStorage pour éviter l'écrasement
+  const [cart, setCart] = useState(() => {
+    if (typeof window === 'undefined') return [];
+    
     const savedCart = localStorage.getItem('kbeauty_cart');
     if (savedCart) {
       try {
-        setCart(JSON.parse(savedCart));
+        return JSON.parse(savedCart);
       } catch (error) {
         console.error('Error loading cart:', error);
         localStorage.removeItem('kbeauty_cart');
+        return [];
       }
     }
-  }, []);
+    return [];
+  });
 
+  // Sauvegarder le panier dans localStorage à chaque modification
   useEffect(() => {
     localStorage.setItem('kbeauty_cart', JSON.stringify(cart));
   }, [cart]);

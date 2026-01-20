@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, CreditCard, Truck, Check } from 'lucide-react';
+import { ArrowLeft, MapPin, Truck, Check } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -19,7 +19,7 @@ const Checkout = () => {
   const { cart, getSubtotal, clearCart } = useCart();
   const { isAuthenticated, user, token } = useAuth();
 
-  const [step, setStep] = useState(1); // 1: Adresse, 2: Paiement, 3: Confirmation
+  const [step, setStep] = useState(1); // 1: Adresse, 2: Confirmation
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
@@ -35,7 +35,6 @@ const Checkout = () => {
   });
 
   const [deliveryNotes, setDeliveryNotes] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('cash_on_delivery');
 
   const subtotal = getSubtotal();
   const deliveryFee = subtotal >= 100 ? 0 : 7;
@@ -47,7 +46,7 @@ const Checkout = () => {
   }
 
   // Rediriger si panier vide
-  if (cart.length === 0 && step !== 3) {
+  if (cart.length === 0 && step !== 2) {
     return <Navigate to="/cart" />;
   }
 
@@ -65,13 +64,9 @@ const Checkout = () => {
     return true;
   };
 
-  const handleNextStep = () => {
-    if (step === 1 && validateAddress()) {
-      setStep(2);
-    }
-  };
-
   const handleSubmitOrder = async () => {
+    if (!validateAddress()) return;
+    
     setLoading(true);
     setError('');
 
@@ -87,7 +82,7 @@ const Checkout = () => {
         })),
         shipping_address: shippingAddress,
         delivery_notes: deliveryNotes,
-        payment_method: paymentMethod,
+        payment_method: 'cash_on_delivery',
       };
 
       const response = await fetch('http://localhost:8000/api/orders/', {
@@ -108,7 +103,7 @@ const Checkout = () => {
       // Succès !
       setOrderNumber(data.order_number);
       clearCart();
-      setStep(3);
+      setStep(2);
 
     } catch (err) {
       setError(err.message);
@@ -117,8 +112,8 @@ const Checkout = () => {
     }
   };
 
-  // ÉTAPE 3 : Confirmation
-  if (step === 3) {
+  // ÉTAPE 2 : Confirmation
+  if (step === 2) {
     return (
       <div className="min-h-screen bg-ivory py-16 px-6">
         <div className="max-w-lg mx-auto text-center">
@@ -172,24 +167,7 @@ const Checkout = () => {
           Retour au panier
         </Link>
 
-        <h1 className="text-3xl font-light text-charcoal mb-8">Checkout</h1>
-
-        {/* Progress Steps */}
-        <div className="flex items-center justify-center gap-4 mb-8">
-          <div className={`flex items-center gap-2 ${step >= 1 ? 'text-gold' : 'text-stone'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-gold text-white' : 'bg-marble text-stone'}`}>
-              1
-            </div>
-            <span className="hidden sm:inline font-medium">Adresse</span>
-          </div>
-          <div className={`w-12 h-0.5 ${step >= 2 ? 'bg-gold' : 'bg-marble'}`} />
-          <div className={`flex items-center gap-2 ${step >= 2 ? 'text-gold' : 'text-stone'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-gold text-white' : 'bg-marble text-stone'}`}>
-              2
-            </div>
-            <span className="hidden sm:inline font-medium">Paiement</span>
-          </div>
-        </div>
+        <h1 className="text-3xl font-light text-charcoal mb-8">Finaliser la commande</h1>
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6 text-sm">
@@ -199,223 +177,163 @@ const Checkout = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Form */}
-          <div className="lg:col-span-2">
-            {/* ÉTAPE 1 : Adresse */}
-            {step === 1 && (
-              <div className="bg-white rounded-lg border border-marble p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <MapPin size={24} className="text-gold" />
-                  <h2 className="text-xl font-medium text-charcoal">Adresse de livraison</h2>
-                </div>
+          <div className="lg:col-span-2 space-y-6">
+            {/* Adresse de livraison */}
+            <div className="bg-white rounded-lg border border-marble p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <MapPin size={24} className="text-gold" />
+                <h2 className="text-xl font-medium text-charcoal">Adresse de livraison</h2>
+              </div>
 
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-charcoal mb-2">
-                        Nom complet *
-                      </label>
-                      <input
-                        type="text"
-                        name="full_name"
-                        value={shippingAddress.full_name}
-                        onChange={handleAddressChange}
-                        className="w-full px-4 py-3 border border-marble rounded-lg focus:outline-none focus:border-gold"
-                        placeholder="Nom et prénom"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-charcoal mb-2">
-                        Téléphone *
-                      </label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={shippingAddress.phone}
-                        onChange={handleAddressChange}
-                        className="w-full px-4 py-3 border border-marble rounded-lg focus:outline-none focus:border-gold"
-                        placeholder="+216 XX XXX XXX"
-                      />
-                    </div>
-                  </div>
-
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-charcoal mb-2">
-                      Adresse *
+                      Nom complet *
                     </label>
                     <input
                       type="text"
-                      name="address_line1"
-                      value={shippingAddress.address_line1}
+                      name="full_name"
+                      value={shippingAddress.full_name}
                       onChange={handleAddressChange}
                       className="w-full px-4 py-3 border border-marble rounded-lg focus:outline-none focus:border-gold"
-                      placeholder="Rue, numéro, immeuble..."
+                      placeholder="Nom et prénom"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-charcoal mb-2">
-                      Complément d'adresse
+                      Téléphone *
+                    </label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={shippingAddress.phone}
+                      onChange={handleAddressChange}
+                      className="w-full px-4 py-3 border border-marble rounded-lg focus:outline-none focus:border-gold"
+                      placeholder="+216 XX XXX XXX"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-charcoal mb-2">
+                    Adresse *
+                  </label>
+                  <input
+                    type="text"
+                    name="address_line1"
+                    value={shippingAddress.address_line1}
+                    onChange={handleAddressChange}
+                    className="w-full px-4 py-3 border border-marble rounded-lg focus:outline-none focus:border-gold"
+                    placeholder="Rue, numéro, immeuble..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-charcoal mb-2">
+                    Complément d'adresse
+                  </label>
+                  <input
+                    type="text"
+                    name="address_line2"
+                    value={shippingAddress.address_line2}
+                    onChange={handleAddressChange}
+                    className="w-full px-4 py-3 border border-marble rounded-lg focus:outline-none focus:border-gold"
+                    placeholder="Appartement, étage... (optionnel)"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-charcoal mb-2">
+                      Ville *
                     </label>
                     <input
                       type="text"
-                      name="address_line2"
-                      value={shippingAddress.address_line2}
+                      name="city"
+                      value={shippingAddress.city}
                       onChange={handleAddressChange}
                       className="w-full px-4 py-3 border border-marble rounded-lg focus:outline-none focus:border-gold"
-                      placeholder="Appartement, étage... (optionnel)"
+                      placeholder="Ville"
                     />
                   </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-charcoal mb-2">
-                        Ville *
-                      </label>
-                      <input
-                        type="text"
-                        name="city"
-                        value={shippingAddress.city}
-                        onChange={handleAddressChange}
-                        className="w-full px-4 py-3 border border-marble rounded-lg focus:outline-none focus:border-gold"
-                        placeholder="Ville"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-charcoal mb-2">
-                        Code postal *
-                      </label>
-                      <input
-                        type="text"
-                        name="postal_code"
-                        value={shippingAddress.postal_code}
-                        onChange={handleAddressChange}
-                        className="w-full px-4 py-3 border border-marble rounded-lg focus:outline-none focus:border-gold"
-                        placeholder="1000"
-                      />
-                    </div>
-                  </div>
-
                   <div>
                     <label className="block text-sm font-medium text-charcoal mb-2">
-                      Gouvernorat *
+                      Code postal *
                     </label>
-                    <select
-                      name="governorate"
-                      value={shippingAddress.governorate}
+                    <input
+                      type="text"
+                      name="postal_code"
+                      value={shippingAddress.postal_code}
                       onChange={handleAddressChange}
                       className="w-full px-4 py-3 border border-marble rounded-lg focus:outline-none focus:border-gold"
-                    >
-                      <option value="">Sélectionnez un gouvernorat</option>
-                      {GOVERNORATES.map(gov => (
-                        <option key={gov} value={gov}>{gov}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-charcoal mb-2">
-                      Notes de livraison
-                    </label>
-                    <textarea
-                      value={deliveryNotes}
-                      onChange={(e) => setDeliveryNotes(e.target.value)}
-                      className="w-full px-4 py-3 border border-marble rounded-lg focus:outline-none focus:border-gold"
-                      rows={3}
-                      placeholder="Instructions spéciales pour la livraison... (optionnel)"
+                      placeholder="1000"
                     />
                   </div>
                 </div>
 
-                <button
-                  onClick={handleNextStep}
-                  className="w-full mt-6 bg-gold text-charcoal py-3 rounded-lg font-semibold hover:bg-gold/90 transition-colors"
-                >
-                  Continuer vers le paiement
-                </button>
-              </div>
-            )}
-
-            {/* ÉTAPE 2 : Paiement */}
-            {step === 2 && (
-              <div className="bg-white rounded-lg border border-marble p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <CreditCard size={24} className="text-gold" />
-                  <h2 className="text-xl font-medium text-charcoal">Mode de paiement</h2>
+                <div>
+                  <label className="block text-sm font-medium text-charcoal mb-2">
+                    Gouvernorat *
+                  </label>
+                  <select
+                    name="governorate"
+                    value={shippingAddress.governorate}
+                    onChange={handleAddressChange}
+                    className="w-full px-4 py-3 border border-marble rounded-lg focus:outline-none focus:border-gold"
+                  >
+                    <option value="">Sélectionnez un gouvernorat</option>
+                    {GOVERNORATES.map(gov => (
+                      <option key={gov} value={gov}>{gov}</option>
+                    ))}
+                  </select>
                 </div>
 
-                <div className="space-y-4">
-                  {/* Paiement à la livraison */}
-                  <label
-                    className={`block p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                      paymentMethod === 'cash_on_delivery'
-                        ? 'border-gold bg-gold/5'
-                        : 'border-marble hover:border-gold/50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <input
-                        type="radio"
-                        name="payment_method"
-                        value="cash_on_delivery"
-                        checked={paymentMethod === 'cash_on_delivery'}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="w-5 h-5 text-gold"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <Truck size={20} className="text-gold" />
-                          <span className="font-medium text-charcoal">Paiement à la livraison</span>
-                        </div>
-                        <p className="text-sm text-stone mt-1">
-                          Payez en espèces à la réception de votre commande
-                        </p>
-                      </div>
-                    </div>
+                <div>
+                  <label className="block text-sm font-medium text-charcoal mb-2">
+                    Notes de livraison
                   </label>
-
-                  {/* Paiement par carte (à venir) */}
-                  <label
-                    className="block p-4 border-2 border-marble rounded-lg cursor-not-allowed opacity-50"
-                  >
-                    <div className="flex items-center gap-4">
-                      <input
-                        type="radio"
-                        name="payment_method"
-                        value="card"
-                        disabled
-                        className="w-5 h-5"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <CreditCard size={20} className="text-stone" />
-                          <span className="font-medium text-charcoal">Paiement par carte</span>
-                          <span className="text-xs bg-marble px-2 py-1 rounded">Bientôt</span>
-                        </div>
-                        <p className="text-sm text-stone mt-1">
-                          Paiement sécurisé par carte bancaire (Konnect)
-                        </p>
-                      </div>
-                    </div>
-                  </label>
-                </div>
-
-                <div className="flex gap-4 mt-6">
-                  <button
-                    onClick={() => setStep(1)}
-                    className="flex-1 border border-gold text-gold py-3 rounded-lg font-semibold hover:bg-gold/10 transition-colors"
-                  >
-                    Retour
-                  </button>
-                  <button
-                    onClick={handleSubmitOrder}
-                    disabled={loading}
-                    className="flex-1 bg-gold text-charcoal py-3 rounded-lg font-semibold hover:bg-gold/90 transition-colors disabled:opacity-50"
-                  >
-                    {loading ? 'Traitement...' : 'Confirmer la commande'}
-                  </button>
+                  <textarea
+                    value={deliveryNotes}
+                    onChange={(e) => setDeliveryNotes(e.target.value)}
+                    className="w-full px-4 py-3 border border-marble rounded-lg focus:outline-none focus:border-gold"
+                    rows={3}
+                    placeholder="Instructions spéciales pour la livraison... (optionnel)"
+                  />
                 </div>
               </div>
-            )}
+            </div>
+
+            {/* Mode de paiement */}
+            <div className="bg-white rounded-lg border border-marble p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Truck size={24} className="text-gold" />
+                <h2 className="text-xl font-medium text-charcoal">Mode de paiement</h2>
+              </div>
+
+              <div className="p-4 border-2 border-gold bg-gold/5 rounded-lg">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-gold/20 rounded-full flex items-center justify-center">
+                    <Truck size={20} className="text-gold" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-charcoal">Paiement à la livraison</p>
+                    <p className="text-sm text-stone">
+                      Payez en espèces à la réception de votre commande
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bouton Commander */}
+            <button
+              onClick={handleSubmitOrder}
+              disabled={loading}
+              className="w-full bg-gold text-charcoal py-4 rounded-lg font-semibold text-lg hover:bg-gold/90 transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Traitement en cours...' : 'Confirmer la commande'}
+            </button>
           </div>
 
           {/* Récapitulatif */}
@@ -464,6 +382,12 @@ const Checkout = () => {
                   <span className="text-gold">{total} TND</span>
                 </div>
               </div>
+
+              {subtotal < 100 && (
+                <p className="text-xs text-stone mt-4 text-center">
+                  Plus que <span className="text-gold font-medium">{100 - subtotal} TND</span> pour la livraison gratuite !
+                </p>
+              )}
             </div>
           </div>
         </div>

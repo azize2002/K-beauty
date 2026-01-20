@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ShoppingCart, Check, ArrowLeft, Plus, Minus } from 'lucide-react';
+import { ShoppingCart, Check, ArrowLeft, Plus, Minus, ChevronDown, ChevronUp } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 
 const ProductDetail = () => {
@@ -12,6 +12,7 @@ const ProductDetail = () => {
   const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [showModal, setShowModal] = useState(false);
+  const [showFullDescription, setShowFullDescription] = useState(false);
 
   useEffect(() => {
     fetch(`http://localhost:8000/api/products/${id}`)
@@ -64,9 +65,20 @@ const ProductDetail = () => {
     );
   }
 
-  // Vérification stricte pour la promo (doit être > 0, pas juste truthy)
-  const hasDiscount = product.discount_percentage && product.discount_percentage > 0;
-  const hasOriginalPrice = product.original_price_tnd && product.original_price_tnd > 0;
+  // CORRECTION: Utiliser des vérifications strictes pour éviter que 0 s'affiche
+  const discountValue = Number(product.discount_percentage) || 0;
+  const hasDiscount = discountValue > 0;
+  
+  const originalPrice = Number(product.original_price_tnd) || 0;
+  const currentPrice = Number(product.price_tnd) || 0;
+  const hasOriginalPrice = originalPrice > 0 && originalPrice > currentPrice;
+
+  // Description courte (3 lignes ~ 250 caractères)
+  const description = product.description || '';
+  const isLongDescription = description.length > 250;
+  const shortDescription = isLongDescription 
+    ? description.substring(0, 250) + '...' 
+    : description;
 
   return (
     <div className="min-h-screen bg-ivory py-8 px-6">
@@ -93,30 +105,32 @@ const ProductDetail = () => {
                 }}
               />
               
-              {/* Badges */}
-              <div className="absolute top-4 left-4 flex flex-col gap-2">
-                {product.is_new && (
-                  <span className="bg-gold text-charcoal px-3 py-1 rounded text-sm font-semibold">
-                    Nouveau
-                  </span>
-                )}
-                {hasDiscount && (
-                  <span className="bg-red-500 text-white px-3 py-1 rounded text-sm font-semibold">
-                    -{product.discount_percentage}%
-                  </span>
-                )}
-              </div>
+              {/* Badges - SEULEMENT si vraiment nécessaire */}
+              {(product.is_new === true || hasDiscount) ? (
+                <div className="absolute top-4 left-4 flex flex-col gap-2">
+                  {product.is_new === true ? (
+                    <span className="bg-gold text-charcoal px-3 py-1 rounded text-sm font-semibold">
+                      Nouveau
+                    </span>
+                  ) : null}
+                  {hasDiscount ? (
+                    <span className="bg-red-500 text-white px-3 py-1 rounded text-sm font-semibold">
+                      -{discountValue}%
+                    </span>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           </div>
 
           {/* Infos produit */}
           <div className="space-y-6">
             {/* Marque */}
-            {product.brand && (
+            {product.brand ? (
               <p className="text-stone uppercase tracking-wide text-sm">
                 {product.brand}
               </p>
-            )}
+            ) : null}
 
             {/* Nom */}
             <h1 className="text-3xl font-light text-charcoal">
@@ -124,20 +138,20 @@ const ProductDetail = () => {
             </h1>
 
             {/* Volume */}
-            {product.volume && (
+            {product.volume ? (
               <p className="text-stone">{product.volume}</p>
-            )}
+            ) : null}
 
             {/* Prix */}
             <div className="flex items-baseline gap-4">
               <span className="text-3xl font-bold text-gold">
-                {product.price_tnd} TND
+                {currentPrice} TND
               </span>
-              {hasDiscount && hasOriginalPrice && (
+              {hasDiscount && hasOriginalPrice ? (
                 <span className="text-xl text-stone line-through">
-                  {product.original_price_tnd} TND
+                  {originalPrice} TND
                 </span>
-              )}
+              ) : null}
             </div>
 
             {/* Stock */}
@@ -151,16 +165,38 @@ const ProductDetail = () => {
               </span>
             )}
 
-            {/* Description */}
+            {/* Description avec "Voir plus" */}
             <div className="border-t border-marble pt-6">
               <h2 className="text-lg font-medium text-charcoal mb-3">Description</h2>
-              <p className="text-stone leading-relaxed">
-                {product.description || 'Description à venir...'}
-              </p>
+              {description ? (
+                <>
+                  <div className="text-stone leading-relaxed whitespace-pre-line">
+                    {showFullDescription ? description : shortDescription}
+                  </div>
+                  {isLongDescription ? (
+                    <button
+                      onClick={() => setShowFullDescription(!showFullDescription)}
+                      className="mt-3 text-gold hover:text-gold/80 font-medium flex items-center gap-1 transition-colors"
+                    >
+                      {showFullDescription ? (
+                        <>
+                          Voir moins <ChevronUp size={18} />
+                        </>
+                      ) : (
+                        <>
+                          Voir plus <ChevronDown size={18} />
+                        </>
+                      )}
+                    </button>
+                  ) : null}
+                </>
+              ) : (
+                <p className="text-stone italic">Description à venir...</p>
+              )}
             </div>
 
             {/* Quantité + Ajouter au panier */}
-            {product.in_stock && (
+            {product.in_stock ? (
               <div className="space-y-4 pt-4">
                 {/* Sélecteur de quantité */}
                 <div className="flex items-center gap-4">
@@ -194,16 +230,13 @@ const ProductDetail = () => {
                 </button>
 
                 {/* Info si déjà dans le panier */}
-                {inCart && cartQuantity > 0 && (
+                {inCart && cartQuantity > 0 ? (
                   <p className="text-center text-stone text-sm">
                     Vous avez déjà {cartQuantity} de ce produit dans votre panier
                   </p>
-                )}
+                ) : null}
               </div>
-            )}
-
-            {/* Produit en rupture */}
-            {!product.in_stock && (
+            ) : (
               <button
                 disabled
                 className="w-full bg-marble text-stone py-4 rounded-lg font-semibold text-lg cursor-not-allowed"
@@ -216,7 +249,7 @@ const ProductDetail = () => {
       </div>
 
       {/* MODAL : Ajouté au panier */}
-      {showModal && (
+      {showModal ? (
         <div className="fixed inset-0 bg-charcoal/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
             <div className="text-center mb-6">
@@ -227,7 +260,7 @@ const ProductDetail = () => {
                 Produit ajouté au panier !
               </h3>
               <p className="text-stone">
-                {product.name} ({quantity} x {product.price_tnd} TND)
+                {product.name} ({quantity} x {currentPrice} TND)
               </p>
             </div>
 
@@ -247,7 +280,7 @@ const ProductDetail = () => {
             </div>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 };
