@@ -19,13 +19,20 @@ const AdminClients = () => {
     fetch('http://localhost:8000/api/admin/clients', {
       headers: { 'Authorization': `Bearer ${token}` },
     })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          throw new Error('Erreur API');
+        }
+        return res.json();
+      })
       .then(data => {
-        setClients(data || []);
+        // S'assurer que data est un tableau
+        setClients(Array.isArray(data) ? data : []);
         setLoadingClients(false);
       })
       .catch(err => {
         console.error('Erreur:', err);
+        setClients([]);
         setLoadingClients(false);
       });
   };
@@ -45,8 +52,11 @@ const AdminClients = () => {
       const response = await fetch(`http://localhost:8000/api/admin/clients/${client.id}`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
+      if (!response.ok) {
+        throw new Error('Erreur API');
+      }
       const data = await response.json();
-      setClientOrders(data.orders || []);
+      setClientOrders(Array.isArray(data.orders) ? data.orders : []);
     } catch (err) {
       console.error('Erreur:', err);
       setClientOrders([]);
@@ -85,12 +95,13 @@ const AdminClients = () => {
     return labels[status] || { text: status, color: 'bg-gray-100 text-gray-700' };
   };
 
-  const filteredClients = clients.filter(c =>
+  // Filtrer avec garde Array.isArray
+  const filteredClients = Array.isArray(clients) ? clients.filter(c =>
     c.first_name?.toLowerCase().includes(search.toLowerCase()) ||
     c.last_name?.toLowerCase().includes(search.toLowerCase()) ||
     c.email?.toLowerCase().includes(search.toLowerCase()) ||
     c.phone?.includes(search)
-  );
+  ) : [];
 
   if (loading) {
     return (
@@ -178,11 +189,11 @@ const AdminClients = () => {
                 <div className="flex items-center gap-4 py-3 border-t border-marble">
                   <div className="flex items-center gap-1">
                     <ShoppingBag size={14} className="text-gold" />
-                    <span className="text-sm font-medium text-charcoal">{client.orders_count} commande(s)</span>
+                    <span className="text-sm font-medium text-charcoal">{client.orders_count || 0} commande(s)</span>
                   </div>
                   <div className="text-sm">
                     <span className="text-stone">Total: </span>
-                    <span className="font-semibold text-gold">{client.total_spent} TND</span>
+                    <span className="font-semibold text-gold">{client.total_spent || 0} TND</span>
                   </div>
                 </div>
 
@@ -243,11 +254,11 @@ const AdminClients = () => {
               <div className="flex items-center gap-6 mt-4 pt-4 border-t border-marble">
                 <div>
                   <span className="text-stone text-sm">Commandes: </span>
-                  <span className="font-semibold text-charcoal">{selectedClient.orders_count}</span>
+                  <span className="font-semibold text-charcoal">{selectedClient.orders_count || 0}</span>
                 </div>
                 <div>
                   <span className="text-stone text-sm">Total dépensé: </span>
-                  <span className="font-semibold text-gold">{selectedClient.total_spent} TND</span>
+                  <span className="font-semibold text-gold">{selectedClient.total_spent || 0} TND</span>
                 </div>
               </div>
             </div>

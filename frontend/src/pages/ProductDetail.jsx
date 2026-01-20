@@ -64,7 +64,9 @@ const ProductDetail = () => {
     );
   }
 
+  // Vérification stricte pour la promo (doit être > 0, pas juste truthy)
   const hasDiscount = product.discount_percentage && product.discount_percentage > 0;
+  const hasOriginalPrice = product.original_price_tnd && product.original_price_tnd > 0;
 
   return (
     <div className="min-h-screen bg-ivory py-8 px-6">
@@ -110,9 +112,11 @@ const ProductDetail = () => {
           {/* Infos produit */}
           <div className="space-y-6">
             {/* Marque */}
-            <p className="text-stone uppercase tracking-wide text-sm">
-              {product.brand}
-            </p>
+            {product.brand && (
+              <p className="text-stone uppercase tracking-wide text-sm">
+                {product.brand}
+              </p>
+            )}
 
             {/* Nom */}
             <h1 className="text-3xl font-light text-charcoal">
@@ -129,7 +133,7 @@ const ProductDetail = () => {
               <span className="text-3xl font-bold text-gold">
                 {product.price_tnd} TND
               </span>
-              {hasDiscount && product.original_price_tnd && (
+              {hasDiscount && hasOriginalPrice && (
                 <span className="text-xl text-stone line-through">
                   {product.original_price_tnd} TND
                 </span>
@@ -190,7 +194,7 @@ const ProductDetail = () => {
                 </button>
 
                 {/* Info si déjà dans le panier */}
-                {inCart && (
+                {inCart && cartQuantity > 0 && (
                   <p className="text-center text-stone text-sm">
                     Vous avez déjà {cartQuantity} de ce produit dans votre panier
                   </p>

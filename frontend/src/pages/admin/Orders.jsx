@@ -27,13 +27,20 @@ const AdminOrders = () => {
     fetch(url, {
       headers: { 'Authorization': `Bearer ${token}` },
     })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          throw new Error('Erreur API');
+        }
+        return res.json();
+      })
       .then(data => {
-        setOrders(data || []);
+        // S'assurer que data est un tableau
+        setOrders(Array.isArray(data) ? data : []);
         setLoadingOrders(false);
       })
       .catch(err => {
         console.error('Erreur:', err);
+        setOrders([]);
         setLoadingOrders(false);
       });
   };
@@ -152,7 +159,7 @@ const AdminOrders = () => {
                     <div>
                       <p className="text-stone">Date</p>
                       <p className="text-charcoal">{formatDate(order.created_at)}</p>
-                      <p className="text-charcoal">{order.items?.length} article(s)</p>
+                      <p className="text-charcoal">{order.items?.length || 0} article(s)</p>
                     </div>
                   </div>
 

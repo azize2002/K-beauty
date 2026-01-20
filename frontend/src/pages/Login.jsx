@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated, isAdmin, loading: authLoading } = useAuth();
   
   const [formData, setFormData] = useState({
     email: '',
@@ -14,6 +14,11 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Rediriger si déjà connecté
+  if (!authLoading && isAuthenticated) {
+    return <Navigate to={isAdmin ? '/admin' : '/'} replace />;
+  }
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -40,6 +45,15 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+  // Afficher un loader pendant la vérification de l'auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-ivory flex items-center justify-center">
+        <p className="text-stone">Chargement...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-ivory py-16 px-6 flex items-center justify-center">

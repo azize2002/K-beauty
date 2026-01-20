@@ -17,15 +17,24 @@ const Profile = () => {
           'Authorization': `Bearer ${token}`,
         },
       })
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) {
+            throw new Error('Non autorisé');
+          }
+          return res.json();
+        })
         .then(data => {
-          setOrders(data || []);
+          // S'assurer que data est bien un tableau
+          setOrders(Array.isArray(data) ? data : []);
           setLoadingOrders(false);
         })
         .catch(err => {
           console.error('Erreur:', err);
+          setOrders([]); // Initialiser à tableau vide en cas d'erreur
           setLoadingOrders(false);
         });
+    } else {
+      setLoadingOrders(false);
     }
   }, [token]);
 

@@ -62,11 +62,16 @@ const AdminProducts = () => {
       const res = await fetch('http://localhost:8000/api/admin/products', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      if (!res.ok) {
+        throw new Error('Erreur API');
+      }
       const data = await res.json();
-      setProducts(data);
+      // S'assurer que data est un tableau
+      setProducts(Array.isArray(data) ? data : []);
       setLoadingProducts(false);
     } catch (err) {
       console.error('Erreur:', err);
+      setProducts([]);
       setLoadingProducts(false);
     }
   };
@@ -253,11 +258,11 @@ const AdminProducts = () => {
     }
   };
 
-  // Filtrer les produits
-  const filteredProducts = products.filter(p => 
+  // Filtrer les produits (avec garde)
+  const filteredProducts = Array.isArray(products) ? products.filter(p => 
     p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.brand?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ) : [];
 
   if (loading) {
     return (
