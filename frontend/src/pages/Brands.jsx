@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Sparkles } from 'lucide-react';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
 const Brands = () => {
   const [brandsWithProducts, setBrandsWithProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -10,7 +12,7 @@ const Brands = () => {
     const fetchBrandsWithProducts = async () => {
       try {
         // Récupérer les marques
-        const brandsRes = await fetch('' + process.env.REACT_APP_API_URL + '/api/brands');
+        const brandsRes = await fetch(`${API_BASE_URL}/api/brands`);
         const brands = await brandsRes.json();
 
         // Pour chaque marque, récupérer un produit représentatif
@@ -18,7 +20,7 @@ const Brands = () => {
           brands.map(async (brand) => {
             try {
               const productsRes = await fetch(
-                `' + process.env.REACT_APP_API_URL + '/api/products?brand=${encodeURIComponent(brand.name)}&limit=1`
+                `${API_BASE_URL}/api/products?brand=${encodeURIComponent(brand.name)}&limit=1`
               );
               const productsData = await productsRes.json();
               const representativeProduct = productsData.products?.[0] || null;
