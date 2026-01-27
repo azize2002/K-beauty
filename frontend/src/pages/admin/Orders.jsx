@@ -3,6 +3,8 @@ import { Link, Navigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'En attente', color: 'bg-yellow-100 text-yellow-700' },
   { value: 'confirmed', label: 'Confirmée', color: 'bg-blue-100 text-blue-700' },
@@ -19,7 +21,7 @@ const AdminOrders = () => {
   const [filterStatus, setFilterStatus] = useState('');
 
   const fetchOrders = () => {
-    let url = '' + process.env.REACT_APP_API_URL + '/api/admin/orders';
+    let url = `${API_BASE_URL}/api/admin/orders`;
     if (filterStatus) {
       url += `?status=${filterStatus}`;
     }
@@ -34,7 +36,6 @@ const AdminOrders = () => {
         return res.json();
       })
       .then(data => {
-        // S'assurer que data est un tableau
         setOrders(Array.isArray(data) ? data : []);
         setLoadingOrders(false);
       })
@@ -53,7 +54,7 @@ const AdminOrders = () => {
 
   const updateStatus = async (orderId, newStatus) => {
     try {
-      const response = await fetch(`' + process.env.REACT_APP_API_URL + '/api/admin/orders/${orderId}/status`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/orders/${orderId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -84,7 +85,6 @@ const AdminOrders = () => {
     });
   };
 
-  // Attendre que l'auth soit chargée
   if (loading) {
     return (
       <div className="min-h-screen bg-ivory flex items-center justify-center">
@@ -99,7 +99,6 @@ const AdminOrders = () => {
   return (
     <div className="min-h-screen bg-ivory py-8 px-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <Link to="/admin" className="inline-flex items-center gap-2 text-stone hover:text-gold mb-6">
           <ArrowLeft size={20} />
           Retour au dashboard
@@ -108,7 +107,6 @@ const AdminOrders = () => {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-light text-charcoal">Gestion des commandes</h1>
           
-          {/* Filter */}
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
@@ -121,7 +119,6 @@ const AdminOrders = () => {
           </select>
         </div>
 
-        {/* Orders List */}
         {loadingOrders ? (
           <p className="text-stone">Chargement...</p>
         ) : orders.length === 0 ? (
@@ -163,7 +160,6 @@ const AdminOrders = () => {
                     </div>
                   </div>
 
-                  {/* Items */}
                   <div className="border-t border-marble pt-4 mb-4">
                     <p className="text-sm text-stone mb-2">Articles :</p>
                     <div className="flex flex-wrap gap-2">
@@ -175,7 +171,6 @@ const AdminOrders = () => {
                     </div>
                   </div>
 
-                  {/* Actions */}
                   <div className="flex gap-2 flex-wrap">
                     {STATUS_OPTIONS.map(status => (
                       <button
