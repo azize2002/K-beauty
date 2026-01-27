@@ -3,20 +3,21 @@ import { Link, Navigate } from 'react-router-dom';
 import { ArrowLeft, Users, Mail, Phone, ShoppingBag, Calendar, X, Eye } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
 const AdminClients = () => {
   const { isAuthenticated, isAdmin, token, loading } = useAuth();
   const [clients, setClients] = useState([]);
   const [loadingClients, setLoadingClients] = useState(true);
   const [search, setSearch] = useState('');
   
-  // Modal pour voir les détails
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [clientOrders, setClientOrders] = useState([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
 
   const fetchClients = () => {
-    fetch('' + process.env.REACT_APP_API_URL + '/api/admin/clients', {
+    fetch(`${API_BASE_URL}/api/admin/clients`, {
       headers: { 'Authorization': `Bearer ${token}` },
     })
       .then(res => {
@@ -26,7 +27,6 @@ const AdminClients = () => {
         return res.json();
       })
       .then(data => {
-        // S'assurer que data est un tableau
         setClients(Array.isArray(data) ? data : []);
         setLoadingClients(false);
       })
@@ -49,7 +49,7 @@ const AdminClients = () => {
     setLoadingDetails(true);
 
     try {
-      const response = await fetch(`' + process.env.REACT_APP_API_URL + '/api/admin/clients/${client.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/clients/${client.id}`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (!response.ok) {
@@ -95,7 +95,6 @@ const AdminClients = () => {
     return labels[status] || { text: status, color: 'bg-gray-100 text-gray-700' };
   };
 
-  // Filtrer avec garde Array.isArray
   const filteredClients = Array.isArray(clients) ? clients.filter(c =>
     c.first_name?.toLowerCase().includes(search.toLowerCase()) ||
     c.last_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -117,7 +116,6 @@ const AdminClients = () => {
   return (
     <div className="min-h-screen bg-ivory py-8 px-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <Link to="/admin" className="inline-flex items-center gap-2 text-stone hover:text-gold mb-6">
           <ArrowLeft size={20} />
           Retour au dashboard
@@ -128,7 +126,6 @@ const AdminClients = () => {
           <h1 className="text-3xl font-light text-charcoal">Gestion des clients</h1>
         </div>
 
-        {/* Search */}
         <div className="relative mb-6">
           <input
             type="text"
@@ -139,10 +136,8 @@ const AdminClients = () => {
           />
         </div>
 
-        {/* Clients count */}
         <p className="text-stone mb-4">{filteredClients.length} client(s)</p>
 
-        {/* Clients List */}
         {loadingClients ? (
           <p className="text-stone">Chargement...</p>
         ) : filteredClients.length === 0 ? (
@@ -154,7 +149,6 @@ const AdminClients = () => {
                 key={client.id}
                 className="bg-white rounded-lg border border-marble p-5"
               >
-                {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-gold/20 rounded-full flex items-center justify-center">
@@ -173,7 +167,6 @@ const AdminClients = () => {
                   </div>
                 </div>
 
-                {/* Contact */}
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center gap-2 text-sm">
                     <Mail size={14} className="text-stone" />
@@ -185,7 +178,6 @@ const AdminClients = () => {
                   </div>
                 </div>
 
-                {/* Stats */}
                 <div className="flex items-center gap-4 py-3 border-t border-marble">
                   <div className="flex items-center gap-1">
                     <ShoppingBag size={14} className="text-gold" />
@@ -197,7 +189,6 @@ const AdminClients = () => {
                   </div>
                 </div>
 
-                {/* Action */}
                 <button
                   onClick={() => openDetailModal(client)}
                   className="w-full mt-3 flex items-center justify-center gap-2 py-2 border border-gold text-gold rounded-lg hover:bg-gold/10 transition-colors text-sm font-medium"
@@ -211,7 +202,6 @@ const AdminClients = () => {
         )}
       </div>
 
-      {/* MODAL: Détails Client */}
       {showDetailModal && selectedClient && (
         <div className="fixed inset-0 bg-charcoal/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full my-8 max-h-[90vh] overflow-y-auto">
@@ -222,7 +212,6 @@ const AdminClients = () => {
               </button>
             </div>
 
-            {/* Client Info */}
             <div className="bg-marble/20 rounded-lg p-4 mb-6">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-16 h-16 bg-gold/20 rounded-full flex items-center justify-center">
@@ -263,7 +252,6 @@ const AdminClients = () => {
               </div>
             </div>
 
-            {/* Orders History */}
             <h3 className="font-medium text-charcoal mb-4 flex items-center gap-2">
               <ShoppingBag size={18} className="text-gold" />
               Historique des commandes
@@ -296,19 +284,19 @@ const AdminClients = () => {
                         <span className="font-medium text-charcoal">{order.total_tnd} TND</span>
                       </div>
                       
-                      {/* Order Items */}
-                      <div className="mt-3 pt-3 border-t border-marble">
-                        <p className="text-xs text-stone mb-2">Articles :</p>
-                        <div className="flex flex-wrap gap-2">
-                          {order.items?.map((item, idx) => (
-                            <span key={idx} className="text-xs bg-marble/50 px-2 py-1 rounded">
-                              {item.product_name} x{item.quantity}
-                            </span>
-                          ))}
+                      {order.items && order.items.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-marble">
+                          <p className="text-xs text-stone mb-2">Articles :</p>
+                          <div className="flex flex-wrap gap-2">
+                            {order.items.map((item, idx) => (
+                              <span key={idx} className="text-xs bg-marble/50 px-2 py-1 rounded">
+                                {item.product_name} x{item.quantity}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
 
-                      {/* Shipping Address */}
                       {order.shipping_address && (
                         <div className="mt-3 pt-3 border-t border-marble text-xs text-stone">
                           <p>Livraison: {order.shipping_address.address_line1}, {order.shipping_address.city}, {order.shipping_address.governorate}</p>
