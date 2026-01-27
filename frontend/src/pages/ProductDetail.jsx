@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { ShoppingCart, Check, ArrowLeft, Plus, Minus, ChevronDown, ChevronUp } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
 const ProductDetail = () => {
   const { id } = useParams();
   const { addToCart, isInCart, getProductQuantity } = useCart();
@@ -15,7 +17,7 @@ const ProductDetail = () => {
   const [showFullDescription, setShowFullDescription] = useState(false);
 
   useEffect(() => {
-    fetch(`' + process.env.REACT_APP_API_URL + '/api/products/${id}`)
+    fetch(`${API_BASE_URL}/api/products/${id}`)
       .then(response => {
         if (!response.ok) {
           throw new Error('Produit non trouvé');
@@ -65,7 +67,6 @@ const ProductDetail = () => {
     );
   }
 
-  // CORRECTION: Utiliser des vérifications strictes pour éviter que 0 s'affiche
   const discountValue = Number(product.discount_percentage) || 0;
   const hasDiscount = discountValue > 0;
   
@@ -73,7 +74,6 @@ const ProductDetail = () => {
   const currentPrice = Number(product.price_tnd) || 0;
   const hasOriginalPrice = originalPrice > 0 && originalPrice > currentPrice;
 
-  // Description courte (3 lignes ~ 250 caractères)
   const description = product.description || '';
   const isLongDescription = description.length > 250;
   const shortDescription = isLongDescription 
@@ -83,7 +83,6 @@ const ProductDetail = () => {
   return (
     <div className="min-h-screen bg-ivory py-8 px-6">
       <div className="max-w-7xl mx-auto">
-        {/* Breadcrumb */}
         <Link 
           to="/products" 
           className="inline-flex items-center gap-2 text-stone hover:text-gold mb-8 transition-colors"
@@ -93,7 +92,6 @@ const ProductDetail = () => {
         </Link>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Image */}
           <div className="bg-white rounded-lg p-4 border border-marble">
             <div className="aspect-square relative">
               <img
@@ -105,56 +103,49 @@ const ProductDetail = () => {
                 }}
               />
               
-              {/* Badges - SEULEMENT si vraiment nécessaire */}
-              {(product.is_new === true || hasDiscount) ? (
+              {(product.is_new === true || hasDiscount) && (
                 <div className="absolute top-4 left-4 flex flex-col gap-2">
-                  {product.is_new === true ? (
+                  {product.is_new === true && (
                     <span className="bg-gold text-charcoal px-3 py-1 rounded text-sm font-semibold">
                       Nouveau
                     </span>
-                  ) : null}
-                  {hasDiscount ? (
+                  )}
+                  {hasDiscount && (
                     <span className="bg-red-500 text-white px-3 py-1 rounded text-sm font-semibold">
                       -{discountValue}%
                     </span>
-                  ) : null}
+                  )}
                 </div>
-              ) : null}
+              )}
             </div>
           </div>
 
-          {/* Infos produit */}
           <div className="space-y-6">
-            {/* Marque */}
-            {product.brand ? (
+            {product.brand && (
               <p className="text-stone uppercase tracking-wide text-sm">
                 {product.brand}
               </p>
-            ) : null}
+            )}
 
-            {/* Nom */}
             <h1 className="text-3xl font-light text-charcoal">
               {product.name}
             </h1>
 
-            {/* Volume */}
-            {product.volume ? (
+            {product.volume && (
               <p className="text-stone">{product.volume}</p>
-            ) : null}
+            )}
 
-            {/* Prix */}
             <div className="flex items-baseline gap-4">
               <span className="text-3xl font-bold text-gold">
                 {currentPrice} TND
               </span>
-              {hasDiscount && hasOriginalPrice ? (
+              {hasDiscount && hasOriginalPrice && (
                 <span className="text-xl text-stone line-through">
                   {originalPrice} TND
                 </span>
-              ) : null}
+              )}
             </div>
 
-            {/* Stock */}
             {product.in_stock ? (
               <span className="inline-block text-green-600 font-medium">
                 ✓ En stock
@@ -165,7 +156,6 @@ const ProductDetail = () => {
               </span>
             )}
 
-            {/* Description avec "Voir plus" */}
             <div className="border-t border-marble pt-6">
               <h2 className="text-lg font-medium text-charcoal mb-3">Description</h2>
               {description ? (
@@ -173,7 +163,7 @@ const ProductDetail = () => {
                   <div className="text-stone leading-relaxed whitespace-pre-line">
                     {showFullDescription ? description : shortDescription}
                   </div>
-                  {isLongDescription ? (
+                  {isLongDescription && (
                     <button
                       onClick={() => setShowFullDescription(!showFullDescription)}
                       className="mt-3 text-gold hover:text-gold/80 font-medium flex items-center gap-1 transition-colors"
@@ -188,17 +178,15 @@ const ProductDetail = () => {
                         </>
                       )}
                     </button>
-                  ) : null}
+                  )}
                 </>
               ) : (
                 <p className="text-stone italic">Description à venir...</p>
               )}
             </div>
 
-            {/* Quantité + Ajouter au panier */}
             {product.in_stock ? (
               <div className="space-y-4 pt-4">
-                {/* Sélecteur de quantité */}
                 <div className="flex items-center gap-4">
                   <span className="text-charcoal font-medium">Quantité :</span>
                   <div className="flex items-center border border-marble rounded-lg">
@@ -220,7 +208,6 @@ const ProductDetail = () => {
                   </div>
                 </div>
 
-                {/* Bouton Ajouter */}
                 <button
                   onClick={handleAddToCart}
                   className="w-full bg-gold text-charcoal py-4 rounded-lg font-semibold text-lg flex items-center justify-center gap-3 hover:bg-gold/90 transition-colors"
@@ -229,12 +216,11 @@ const ProductDetail = () => {
                   Ajouter au panier
                 </button>
 
-                {/* Info si déjà dans le panier */}
-                {inCart && cartQuantity > 0 ? (
+                {inCart && cartQuantity > 0 && (
                   <p className="text-center text-stone text-sm">
                     Vous avez déjà {cartQuantity} de ce produit dans votre panier
                   </p>
-                ) : null}
+                )}
               </div>
             ) : (
               <button
@@ -248,8 +234,7 @@ const ProductDetail = () => {
         </div>
       </div>
 
-      {/* MODAL : Ajouté au panier */}
-      {showModal ? (
+      {showModal && (
         <div className="fixed inset-0 bg-charcoal/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
             <div className="text-center mb-6">
@@ -280,7 +265,7 @@ const ProductDetail = () => {
             </div>
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 };
