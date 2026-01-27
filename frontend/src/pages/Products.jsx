@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import ProductCard from '../components/product/ProductCard';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
 const Products = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,7 +15,7 @@ const Products = () => {
     const brand = searchParams.get('brand');
     const search = searchParams.get('search');
 
-    let apiUrl = '' + process.env.REACT_APP_API_URL + '/api/products?limit=200';
+    let apiUrl = `${API_BASE_URL}/api/products?limit=200`;
     
     if (category) {
       apiUrl += `&category=${encodeURIComponent(category)}`;
@@ -66,9 +68,9 @@ const Products = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-ivory py-16 px-6">
+      <div className="min-h-screen bg-ivory py-16 px-4 md:px-6">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-light text-charcoal text-center mb-12">
+          <h1 className="text-2xl md:text-3xl font-light text-charcoal text-center mb-12">
             {getPageTitle()}
           </h1>
           <p className="text-center text-stone">Chargement des produits...</p>
@@ -79,9 +81,9 @@ const Products = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-ivory py-16 px-6">
+      <div className="min-h-screen bg-ivory py-16 px-4 md:px-6">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-light text-charcoal text-center mb-12">
+          <h1 className="text-2xl md:text-3xl font-light text-charcoal text-center mb-12">
             {getPageTitle()}
           </h1>
           <p className="text-center text-red-600">Erreur: {error}</p>
@@ -91,20 +93,20 @@ const Products = () => {
   }
 
   return (
-    <div className="min-h-screen bg-ivory py-16 px-6">
+    <div className="min-h-screen bg-ivory py-8 md:py-16 px-4 md:px-6">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-light text-charcoal text-center mb-12">
+        <h1 className="text-2xl md:text-3xl font-light text-charcoal text-center mb-4 md:mb-8">
           {getPageTitle()}
         </h1>
         
-        <p className="text-center text-stone mb-8">
+        <p className="text-center text-stone mb-6 md:mb-8 text-sm md:text-base">
           {products.length} produit{products.length > 1 ? 's' : ''} disponible{products.length > 1 ? 's' : ''}
         </p>
 
         {products.length === 0 ? (
           <p className="text-center text-stone">Aucun produit trouvé pour cette sélection.</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
             {products.map(product => (
               <ProductCard key={product.id} product={product} />
             ))}

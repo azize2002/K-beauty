@@ -186,7 +186,7 @@ const About = () => {
         <div className="max-w-4xl mx-auto text-center">
           <p className="text-stone mb-2">Une question ? Contactez-nous</p>
           <p className="text-charcoal font-medium">
-            📧 contact@kbeauty.tn &nbsp;•&nbsp; 📱 +216 XX XXX XXX
+              contact@kbeauty.tn &nbsp;•&nbsp; 
           </p>
           <p className="text-stone text-sm mt-4">
             Suivez-nous sur Instagram : @kbeauty.tunisia
