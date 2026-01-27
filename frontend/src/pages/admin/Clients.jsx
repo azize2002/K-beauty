@@ -16,7 +16,7 @@ const AdminClients = () => {
   const [loadingDetails, setLoadingDetails] = useState(false);
 
   const fetchClients = () => {
-    fetch('http://localhost:8000/api/admin/clients', {
+    fetch('' + process.env.REACT_APP_API_URL + '/api/admin/clients', {
       headers: { 'Authorization': `Bearer ${token}` },
     })
       .then(res => {
@@ -49,7 +49,7 @@ const AdminClients = () => {
     setLoadingDetails(true);
 
     try {
-      const response = await fetch(`http://localhost:8000/api/admin/clients/${client.id}`, {
+      const response = await fetch(`' + process.env.REACT_APP_API_URL + '/api/admin/clients/${client.id}`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (!response.ok) {

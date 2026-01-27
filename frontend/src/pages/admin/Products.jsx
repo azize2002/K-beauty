@@ -59,7 +59,7 @@ const AdminProducts = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/admin/products', {
+      const res = await fetch('' + process.env.REACT_APP_API_URL + '/api/admin/products', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) {
@@ -114,7 +114,7 @@ const AdminProducts = () => {
     }
 
     try {
-      const res = await fetch('http://localhost:8000/api/admin/products', {
+      const res = await fetch('' + process.env.REACT_APP_API_URL + '/api/admin/products', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -168,7 +168,7 @@ const AdminProducts = () => {
     setError('');
 
     try {
-      const res = await fetch(`http://localhost:8000/api/admin/products/${selectedProduct.id}`, {
+      const res = await fetch(`' + process.env.REACT_APP_API_URL + '/api/admin/products/${selectedProduct.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -204,7 +204,7 @@ const AdminProducts = () => {
 
   const handleDeleteProduct = async () => {
     try {
-      const res = await fetch(`http://localhost:8000/api/admin/products/${selectedProduct.id}`, {
+      const res = await fetch(`' + process.env.REACT_APP_API_URL + '/api/admin/products/${selectedProduct.id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -222,7 +222,7 @@ const AdminProducts = () => {
   // TOGGLE BESTSELLER
   const toggleBestseller = async (product) => {
     try {
-      await fetch(`http://localhost:8000/api/admin/products/${product.id}/toggle-bestseller`, {
+      await fetch(`' + process.env.REACT_APP_API_URL + '/api/admin/products/${product.id}/toggle-bestseller`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -235,7 +235,7 @@ const AdminProducts = () => {
   // TOGGLE NEW
   const toggleNew = async (product) => {
     try {
-      await fetch(`http://localhost:8000/api/admin/products/${product.id}/toggle-new`, {
+      await fetch(`' + process.env.REACT_APP_API_URL + '/api/admin/products/${product.id}/toggle-new`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -248,7 +248,7 @@ const AdminProducts = () => {
   // TOGGLE STOCK
   const toggleStock = async (product) => {
     try {
-      await fetch(`http://localhost:8000/api/admin/products/${product.id}/toggle-stock`, {
+      await fetch(`' + process.env.REACT_APP_API_URL + '/api/admin/products/${product.id}/toggle-stock`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });

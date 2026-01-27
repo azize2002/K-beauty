@@ -15,7 +15,7 @@ const ProductDetail = () => {
   const [showFullDescription, setShowFullDescription] = useState(false);
 
   useEffect(() => {
-    fetch(`http://localhost:8000/api/products/${id}`)
+    fetch(`' + process.env.REACT_APP_API_URL + '/api/products/${id}`)
       .then(response => {
         if (!response.ok) {
           throw new Error('Produit non trouvé');

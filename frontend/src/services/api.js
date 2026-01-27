@@ -3,7 +3,7 @@
  */
 
 // Base API configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || '' + process.env.REACT_APP_API_URL + '';
 
 /**
  * Generic fetch wrapper with error handling
@@ -11,7 +11,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
  * @param {RequestInit} options - Fetch options
  * @returns {Promise<{success: boolean, data?: any, error?: string}>}
  */
-async function apiRequest(endpoint, options = {}) {
+export async function apiRequest(endpoint, options = {}) {
   try {
     const url = `${API_BASE_URL}${endpoint}`;
     const response = await fetch(url, {
@@ -58,8 +58,6 @@ function buildQueryString(filters = {}) {
 
 /**
  * Get products with optional filters
- * @param {Object} filters - Filter parameters (brand, category, min_price, max_price, search, limit, offset)
- * @returns {Promise<{success: boolean, data?: {products: Array, total: number, limit: number, offset: number}, error?: string}>}
  */
 export async function getProducts(filters = {}) {
   const queryString = buildQueryString(filters);
@@ -68,8 +66,6 @@ export async function getProducts(filters = {}) {
 
 /**
  * Get a single product by ID
- * @param {string} id - Product ID
- * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
  */
 export async function getProduct(id) {
   if (!id) {
@@ -80,7 +76,6 @@ export async function getProduct(id) {
 
 /**
  * Get all brands with product counts
- * @returns {Promise<{success: boolean, data?: Array<{name: string, slug: string, logo_url: string, product_count: number}>, error?: string}>}
  */
 export async function getBrands() {
   return apiRequest('/api/brands');
@@ -88,9 +83,14 @@ export async function getBrands() {
 
 /**
  * Get all categories with product counts
- * @returns {Promise<{success: boolean, data?: Array<{name: string, slug: string, image_url: string, product_count: number}>, error?: string}>}
  */
 export async function getCategories() {
   return apiRequest('/api/categories');
 }
 
+/**
+ * Get API base URL (useful for other components)
+ */
+export function getApiBaseUrl() {
+  return API_BASE_URL;
+}

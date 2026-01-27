@@ -29,7 +29,7 @@ export const AuthProvider = ({ children }) => {
 
   // Inscription
   const signup = async (userData) => {
-    const response = await fetch('http://localhost:8000/api/auth/signup', {
+    const response = await fetch('' + process.env.REACT_APP_API_URL + '/api/auth/signup', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }) => {
 
   // Connexion
   const login = async (email, password) => {
-    const response = await fetch('http://localhost:8000/api/auth/login', {
+    const response = await fetch('' + process.env.REACT_APP_API_URL + '/api/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -85,7 +85,7 @@ export const AuthProvider = ({ children }) => {
 
   // Mettre à jour le profil
   const updateProfile = async (updates) => {
-    const response = await fetch('http://localhost:8000/api/auth/me', {
+    const response = await fetch('' + process.env.REACT_APP_API_URL + '/api/auth/me', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

@@ -19,7 +19,7 @@ const AdminOrders = () => {
   const [filterStatus, setFilterStatus] = useState('');
 
   const fetchOrders = () => {
-    let url = 'http://localhost:8000/api/admin/orders';
+    let url = '' + process.env.REACT_APP_API_URL + '/api/admin/orders';
     if (filterStatus) {
       url += `?status=${filterStatus}`;
     }
@@ -53,7 +53,7 @@ const AdminOrders = () => {
 
   const updateStatus = async (orderId, newStatus) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/admin/orders/${orderId}/status`, {
+      const response = await fetch(`' + process.env.REACT_APP_API_URL + '/api/admin/orders/${orderId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

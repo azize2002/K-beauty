@@ -13,7 +13,7 @@ const Products = () => {
     const brand = searchParams.get('brand');
     const search = searchParams.get('search');
 
-    let apiUrl = 'http://localhost:8000/api/products?limit=200';
+    let apiUrl = '' + process.env.REACT_APP_API_URL + '/api/products?limit=200';
     
     if (category) {
       apiUrl += `&category=${encodeURIComponent(category)}`;

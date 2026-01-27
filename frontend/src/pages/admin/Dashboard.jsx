@@ -19,7 +19,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     if (token && isAdmin) {
-      fetch('http://localhost:8000/api/admin/dashboard', {
+      fetch('' + process.env.REACT_APP_API_URL + '/api/admin/dashboard', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

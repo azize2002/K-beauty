@@ -22,8 +22,8 @@ const Home = () => {
     const fetchData = async () => {
       try {
         const [productsRes, brandsRes] = await Promise.all([
-          fetch('http://localhost:8000/api/products/bestsellers?limit=8'),
-          fetch('http://localhost:8000/api/brands'),
+          fetch('' + process.env.REACT_APP_API_URL + '/api/products/bestsellers?limit=8'),
+          fetch('' + process.env.REACT_APP_API_URL + '/api/brands'),
         ]);
         const productsData = await productsRes.json();
         const brandsData = await brandsRes.json();

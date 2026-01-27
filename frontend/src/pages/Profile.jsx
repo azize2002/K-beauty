@@ -13,7 +13,7 @@ const Profile = () => {
   // Charger les commandes
   useEffect(() => {
     if (token) {
-      fetch('http://localhost:8000/api/orders/my-orders', {
+      fetch('' + process.env.REACT_APP_API_URL + '/api/orders/my-orders', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

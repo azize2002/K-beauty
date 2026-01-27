@@ -16,7 +16,7 @@ const useOrderNotifications = (token, isAuthenticated) => {
 
     const checkNotifications = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/orders/my-orders', {
+        const response = await fetch('' + process.env.REACT_APP_API_URL + '/api/orders/my-orders', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         

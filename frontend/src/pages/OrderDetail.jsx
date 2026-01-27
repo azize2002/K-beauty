@@ -22,7 +22,7 @@ const OrderDetail = () => {
 
   const fetchOrder = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/api/orders/${id}`, {
+      const response = await fetch(`' + process.env.REACT_APP_API_URL + '/api/orders/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -44,7 +44,7 @@ const OrderDetail = () => {
   const handleCancelOrder = async () => {
     setCancelling(true);
     try {
-      const response = await fetch(`http://localhost:8000/api/orders/${id}/cancel`, {
+      const response = await fetch(`' + process.env.REACT_APP_API_URL + '/api/orders/${id}/cancel`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

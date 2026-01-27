@@ -10,7 +10,7 @@ const Brands = () => {
     const fetchBrandsWithProducts = async () => {
       try {
         // Récupérer les marques
-        const brandsRes = await fetch('http://localhost:8000/api/brands');
+        const brandsRes = await fetch('' + process.env.REACT_APP_API_URL + '/api/brands');
         const brands = await brandsRes.json();
 
         // Pour chaque marque, récupérer un produit représentatif
@@ -18,7 +18,7 @@ const Brands = () => {
           brands.map(async (brand) => {
             try {
               const productsRes = await fetch(
-                `http://localhost:8000/api/products?brand=${encodeURIComponent(brand.name)}&limit=1`
+                `' + process.env.REACT_APP_API_URL + '/api/products?brand=${encodeURIComponent(brand.name)}&limit=1`
               );
               const productsData = await productsRes.json();
               const representativeProduct = productsData.products?.[0] || null;
