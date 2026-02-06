@@ -8,9 +8,12 @@ import {
   TrendingUp,
   Clock,
   CheckCircle,
-  Trophy
+  Trophy,
+  ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+
+const API_URL = process.env.REACT_APP_API_URL || '';
 
 const AdminDashboard = () => {
   const { isAuthenticated, isAdmin, token, loading } = useAuth();
@@ -19,7 +22,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     if (token && isAdmin) {
-      fetch('' + process.env.REACT_APP_API_URL + '/api/admin/dashboard', {
+      fetch(`${API_URL}/api/admin/dashboard`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

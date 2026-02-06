@@ -3,27 +3,29 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import ProductCard from '../components/product/ProductCard';
 
+const API_URL = process.env.REACT_APP_API_URL || '';
+
 const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Images de catégories avec les VRAIES catégories de la DB
+  // Catégories classées par ordre de routine coréenne
   const categories = [
-    { name: 'Sérums', slug: 'Serum', image: '/images/categories/serums.png' },
-    { name: 'Crèmes', slug: 'Moisturizer', image: '/images/categories/cremes.png' },
     { name: 'Nettoyants', slug: 'Foam Cleanser', image: '/images/categories/nettoyants.png' },
-    { name: 'Masques', slug: 'Sheet Mask', image: '/images/categories/masques.png' },
-    { name: 'Protection Solaire', slug: 'Sunscreen', image: '/images/categories/protection-solaire.png' },
     { name: 'Toners', slug: 'Toner', image: '/images/categories/toners.png' },
+    { name: 'Sérums', slug: 'Serum', image: '/images/categories/serums.png' },
+    { name: 'Masques', slug: 'Sheet Mask', image: '/images/categories/masques.png' },
+    { name: 'Crèmes', slug: 'Moisturizer', image: '/images/categories/cremes.png' },
+    { name: 'Protection Solaire', slug: 'Sunscreen', image: '/images/categories/protection-solaire.png' },
   ];
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [productsRes, brandsRes] = await Promise.all([
-          fetch('' + process.env.REACT_APP_API_URL + '/api/products/bestsellers?limit=8'),
-          fetch('' + process.env.REACT_APP_API_URL + '/api/brands'),
+          fetch(`${API_URL}/api/products/bestsellers?limit=8`),
+          fetch(`${API_URL}/api/brands`),
         ]);
         const productsData = await productsRes.json();
         const brandsData = await brandsRes.json();

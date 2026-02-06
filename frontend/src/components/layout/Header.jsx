@@ -1,8 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Search, ShoppingBag, User } from 'lucide-react';
+import { Menu, X, Search, ShoppingBag, User, Heart, Clock, TrendingUp } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useFavorites } from '../../contexts/FavoritesContext';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
+// Hook pour debounce
+const useDebounce = (value, delay) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+
+  return debouncedValue;
+};
 
 // Hook pour vérifier les notifications de commandes
 const useOrderNotifications = (token, isAuthenticated) => {
@@ -16,18 +34,15 @@ const useOrderNotifications = (token, isAuthenticated) => {
 
     const checkNotifications = async () => {
       try {
-        const response = await fetch('' + process.env.REACT_APP_API_URL + '/api/orders/my-orders', {
+        const response = await fetch(`${API_BASE_URL}/api/orders/my-orders`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
         if (!response.ok) return;
         
         const orders = await response.json();
-        
-        // Récupérer les statuts vus depuis localStorage
         const seenStatuses = JSON.parse(localStorage.getItem('kbeauty_seen_statuses') || '{}');
         
-        // Vérifier s'il y a des changements
         let hasChanges = false;
         for (const order of orders) {
           const lastSeen = seenStatuses[order.id];
@@ -44,8 +59,6 @@ const useOrderNotifications = (token, isAuthenticated) => {
     };
 
     checkNotifications();
-    
-    // Vérifier toutes les 30 secondes
     const interval = setInterval(checkNotifications, 30000);
     return () => clearInterval(interval);
   }, [token, isAuthenticated]);
@@ -58,14 +71,63 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [recentSearches, setRecentSearches] = useState([]);
+  
   const searchInputRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { getCartCount } = useCart();
   const { isAuthenticated, user, token } = useAuth();
+  const { favoritesCount } = useFavorites();
 
   const cartCount = getCartCount();
   const hasNotifications = useOrderNotifications(token, isAuthenticated);
+  
+  // Debounce la recherche pour éviter trop d'appels API
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
+  // Charger les recherches récentes au démarrage
+  useEffect(() => {
+    const saved = localStorage.getItem('kbeauty_recent_searches');
+    if (saved) {
+      try {
+        setRecentSearches(JSON.parse(saved));
+      } catch (e) {
+        setRecentSearches([]);
+      }
+    }
+  }, []);
+
+  // Fetch suggestions quand la recherche change
+  useEffect(() => {
+    if (debouncedSearch.length >= 2) {
+      fetchSuggestions(debouncedSearch);
+    } else {
+      setSuggestions([]);
+      setBrands([]);
+      setCategories([]);
+    }
+  }, [debouncedSearch]);
+
+  const fetchSuggestions = async (query) => {
+    setIsLoadingSuggestions(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/search/suggestions?q=${encodeURIComponent(query)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSuggestions(data.suggestions || []);
+        setBrands(data.brands || []);
+        setCategories(data.categories || []);
+      }
+    } catch (error) {
+      console.error('Error fetching suggestions:', error);
+    }
+    setIsLoadingSuggestions(false);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -75,14 +137,12 @@ const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Focus sur l'input quand la recherche s'ouvre
   useEffect(() => {
     if (isSearchOpen && searchInputRef.current) {
       searchInputRef.current.focus();
     }
   }, [isSearchOpen]);
 
-  // Fermer la recherche avec Escape
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') {
@@ -103,13 +163,40 @@ const Header = () => {
 
   const isActive = (path) => location.pathname === path;
 
+  const saveRecentSearch = (term) => {
+    const updated = [term, ...recentSearches.filter(s => s !== term)].slice(0, 5);
+    setRecentSearches(updated);
+    localStorage.setItem('kbeauty_recent_searches', JSON.stringify(updated));
+  };
+
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      saveRecentSearch(searchQuery.trim());
       navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
       setIsSearchOpen(false);
       setSearchQuery('');
     }
+  };
+
+  const handleSuggestionClick = (term) => {
+    saveRecentSearch(term);
+    navigate(`/products?search=${encodeURIComponent(term)}`);
+    setIsSearchOpen(false);
+    setSearchQuery('');
+  };
+
+  const handleBrandClick = (brand) => {
+    saveRecentSearch(brand);
+    navigate(`/products?brand=${encodeURIComponent(brand)}`);
+    setIsSearchOpen(false);
+    setSearchQuery('');
+  };
+
+  const handleCategoryClick = (category) => {
+    navigate(`/products?category=${encodeURIComponent(category)}`);
+    setIsSearchOpen(false);
+    setSearchQuery('');
   };
 
   const toggleSearch = () => {
@@ -118,6 +205,8 @@ const Header = () => {
       setSearchQuery('');
     }
   };
+
+  const popularSearches = ['Serum', 'Sunscreen', 'COSRX', 'ANUA', 'Toner', 'Cream'];
 
   return (
     <>
@@ -155,7 +244,20 @@ const Header = () => {
               <Search size={20} />
             </button>
 
-            {/* Panier avec badge */}
+            {/* Favoris */}
+            <Link
+              to="/favorites"
+              className="relative text-charcoal hover:text-red-500 transition-colors duration-200"
+            >
+              <Heart size={20} />
+              {favoritesCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-semibold">
+                  {favoritesCount > 9 ? '9+' : favoritesCount}
+                </span>
+              )}
+            </Link>
+
+            {/* Panier */}
             <Link
               to="/cart"
               className="relative text-charcoal hover:text-gold transition-colors duration-200"
@@ -168,7 +270,7 @@ const Header = () => {
               )}
             </Link>
 
-            {/* Profil / Login */}
+            {/* Profil */}
             <Link
               to={isAuthenticated ? '/profile' : '/login'}
               className="relative text-charcoal hover:text-gold transition-colors duration-200 flex items-center gap-1"
@@ -210,7 +312,14 @@ const Header = () => {
                   {link.label}
                 </Link>
               ))}
-              {/* Login/Profile dans menu mobile */}
+              <Link
+                to="/favorites"
+                onClick={() => setIsMenuOpen(false)}
+                className="text-sm font-medium text-charcoal hover:text-gold flex items-center gap-2"
+              >
+                <Heart size={16} />
+                Mes Favoris {favoritesCount > 0 && `(${favoritesCount})`}
+              </Link>
               <Link
                 to={isAuthenticated ? '/profile' : '/login'}
                 onClick={() => setIsMenuOpen(false)}
@@ -223,7 +332,7 @@ const Header = () => {
         )}
       </header>
 
-      {/* Modal de recherche */}
+      {/* Modal de recherche avancée */}
       {isSearchOpen && (
         <div className="fixed inset-0 z-[60] flex items-start justify-center pt-20">
           {/* Overlay */}
@@ -254,24 +363,122 @@ const Header = () => {
               </button>
             </form>
             
-            {/* Suggestions rapides */}
-            <div className="mt-4 bg-white rounded-xl shadow-xl p-4">
-              <p className="text-xs text-stone uppercase tracking-wide mb-3">Recherches populaires</p>
-              <div className="flex flex-wrap gap-2">
-                {['Serum', 'Cream', 'ANUA', 'COSRX', 'Sunscreen', 'Toner'].map((term) => (
-                  <button
-                    key={term}
-                    onClick={() => {
-                      navigate(`/products?search=${encodeURIComponent(term)}`);
-                      setIsSearchOpen(false);
-                      setSearchQuery('');
-                    }}
-                    className="px-3 py-1.5 bg-marble/50 hover:bg-gold/20 text-charcoal text-sm rounded-full transition-colors"
-                  >
-                    {term}
-                  </button>
-                ))}
-              </div>
+            {/* Résultats de recherche / Suggestions */}
+            <div className="mt-2 bg-white rounded-xl shadow-xl overflow-hidden max-h-[60vh] overflow-y-auto">
+              
+              {/* Loading */}
+              {isLoadingSuggestions && searchQuery.length >= 2 && (
+                <div className="p-4 text-center text-stone">
+                  <div className="animate-spin w-6 h-6 border-2 border-gold border-t-transparent rounded-full mx-auto"></div>
+                </div>
+              )}
+
+              {/* Suggestions de produits */}
+              {!isLoadingSuggestions && suggestions.length > 0 && (
+                <div className="p-4 border-b border-marble">
+                  <p className="text-xs text-stone uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <Search size={14} />
+                    Suggestions
+                  </p>
+                  <div className="space-y-2">
+                    {suggestions.slice(0, 6).map((suggestion, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleSuggestionClick(suggestion)}
+                        className="block w-full text-left px-3 py-2 text-charcoal hover:bg-gold/10 rounded-lg transition-colors text-sm"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Marques trouvées */}
+              {!isLoadingSuggestions && brands.length > 0 && (
+                <div className="p-4 border-b border-marble">
+                  <p className="text-xs text-stone uppercase tracking-wide mb-3">Marques</p>
+                  <div className="flex flex-wrap gap-2">
+                    {brands.map((brand, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleBrandClick(brand)}
+                        className="px-3 py-1.5 bg-gold/10 hover:bg-gold/20 text-charcoal text-sm rounded-full transition-colors font-medium"
+                      >
+                        {brand}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Catégories trouvées */}
+              {!isLoadingSuggestions && categories.length > 0 && (
+                <div className="p-4 border-b border-marble">
+                  <p className="text-xs text-stone uppercase tracking-wide mb-3">Catégories</p>
+                  <div className="flex flex-wrap gap-2">
+                    {categories.map((category, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleCategoryClick(category)}
+                        className="px-3 py-1.5 bg-marble/50 hover:bg-gold/20 text-charcoal text-sm rounded-full transition-colors"
+                      >
+                        {category}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Pas de résultats pour une recherche */}
+              {!isLoadingSuggestions && searchQuery.length >= 2 && suggestions.length === 0 && brands.length === 0 && (
+                <div className="p-4 text-center text-stone">
+                  <p>Aucune suggestion pour "{searchQuery}"</p>
+                  <p className="text-sm mt-1">Appuyez sur Entrée pour rechercher</p>
+                </div>
+              )}
+
+              {/* Recherches récentes */}
+              {searchQuery.length < 2 && recentSearches.length > 0 && (
+                <div className="p-4 border-b border-marble">
+                  <p className="text-xs text-stone uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <Clock size={14} />
+                    Recherches récentes
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {recentSearches.map((term, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleSuggestionClick(term)}
+                        className="px-3 py-1.5 bg-marble/30 hover:bg-gold/20 text-charcoal text-sm rounded-full transition-colors"
+                      >
+                        {term}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Recherches populaires */}
+              {searchQuery.length < 2 && (
+                <div className="p-4">
+                  <p className="text-xs text-stone uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <TrendingUp size={14} />
+                    Recherches populaires
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {popularSearches.map((term) => (
+                      <button
+                        key={term}
+                        onClick={() => handleSuggestionClick(term)}
+                        className="px-3 py-1.5 bg-marble/50 hover:bg-gold/20 text-charcoal text-sm rounded-full transition-colors"
+                      >
+                        {term}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

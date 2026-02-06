@@ -131,7 +131,7 @@ const Cart = () => {
               </div>
 
               <Link to="/checkout" className="block text-center bg-gold text-charcoal px-6 py-3 rounded-lg font-medium hover:bg-gold/90 transition-colors">
-                Passer à la caisse
+                  Commander
               </Link>
 
               <p className="text-xs text-center text-stone mt-3">
@@ -149,7 +149,9 @@ const CartItem = ({ item, updateQuantity, removeFromCart }) => {
   const { id, name, brand, price_tnd, original_price_tnd, discount_percentage, image_url, quantity } = item;
 
   const itemTotal = price_tnd * quantity;
-  const hasDiscount = discount_percentage && discount_percentage > 0;
+  
+  // FIX: Conversion explicite en boolean pour éviter d'afficher "0"
+  const hasDiscount = Number(discount_percentage) > 0 && Number(original_price_tnd) > 0;
 
   return (
     <div className="bg-white rounded-lg border border-marble p-4 flex gap-4">
@@ -174,8 +176,8 @@ const CartItem = ({ item, updateQuantity, removeFromCart }) => {
 
         <div className="flex items-baseline gap-2 mb-3">
           <span className="text-gold font-bold text-sm md:text-base">{price_tnd} TND</span>
-          {hasDiscount && original_price_tnd && (
-            <span className="text-xs text-stone line-through">{original_price_tnd}</span>
+          {hasDiscount && (
+            <span className="text-xs text-stone line-through">{original_price_tnd} TND</span>
           )}
         </div>
 

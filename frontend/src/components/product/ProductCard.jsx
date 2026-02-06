@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Check, X } from 'lucide-react';
+import { ShoppingCart, Check, X, Heart } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
+import { useFavorites } from '../../contexts/FavoritesContext';
 
 const ProductCard = ({ product }) => {
   const { addToCart, isInCart } = useCart();
+  const { toggleFavorite, isFavorite } = useFavorites();
   const [showModal, setShowModal] = useState(false);
   const navigate = useNavigate();
 
@@ -32,6 +34,7 @@ const ProductCard = ({ product }) => {
   const hasDiscount = discountValue > 0 && displayOriginalPrice > displayPrice;
   
   const inCart = isInCart(id);
+  const inFavorites = isFavorite(id);
 
   const handleAddToCart = (e) => {
     e.preventDefault();
@@ -41,6 +44,12 @@ const ProductCard = ({ product }) => {
     
     addToCart(product);
     setShowModal(true);
+  };
+
+  const handleToggleFavorite = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleFavorite(product);
   };
 
   const handleGoToCart = () => {
@@ -67,6 +76,7 @@ const ProductCard = ({ product }) => {
               }} 
             />
             
+            {/* Badges (Nouveau, Promo) */}
             {(is_new || hasDiscount) && (
               <div className="absolute top-2 left-2 flex flex-col gap-1">
                 {is_new && (
@@ -81,6 +91,22 @@ const ProductCard = ({ product }) => {
                 )}
               </div>
             )}
+
+            {/* Bouton Favori ❤️ */}
+            <button
+              onClick={handleToggleFavorite}
+              className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
+                inFavorites 
+                  ? 'bg-red-500 text-white' 
+                  : 'bg-white/80 text-stone hover:bg-white hover:text-red-500'
+              }`}
+              aria-label={inFavorites ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+            >
+              <Heart 
+                size={18} 
+                fill={inFavorites ? 'currentColor' : 'none'}
+              />
+            </button>
 
             {!in_stock && (
               <div className="absolute inset-0 bg-charcoal/60 flex items-center justify-center">
@@ -112,7 +138,7 @@ const ProductCard = ({ product }) => {
             </div>
           </div>
 
-          {/* Bouton Ajouter au panier - RESPONSIVE */}
+          {/* Bouton Ajouter au panier */}
           <button
             onClick={handleAddToCart}
             disabled={!in_stock}

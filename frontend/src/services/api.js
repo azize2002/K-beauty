@@ -3,7 +3,15 @@
  */
 
 // Base API configuration
-const API_BASE_URL = process.env.REACT_APP_API_URL || '' + process.env.REACT_APP_API_URL + '';
+const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+
+/**
+ * Get the auth token from localStorage
+ * @returns {string|null}
+ */
+function getAuthToken() {
+  return localStorage.getItem('kbeauty_token');
+}
 
 /**
  * Generic fetch wrapper with error handling
@@ -14,12 +22,24 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || '' + process.env.REACT_APP
 export async function apiRequest(endpoint, options = {}) {
   try {
     const url = `${API_BASE_URL}${endpoint}`;
+    
+    // Récupérer le token d'authentification
+    const token = getAuthToken();
+    
+    // Construire les headers avec le token si présent
+    const headers = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+    
+    // Ajouter le token d'autorisation si disponible
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
     const response = await fetch(url, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -93,4 +113,46 @@ export async function getCategories() {
  */
 export function getApiBaseUrl() {
   return API_BASE_URL;
+}
+
+// ============================================
+// ADMIN API FUNCTIONS
+// ============================================
+
+/**
+ * Get admin dashboard stats
+ */
+export async function getAdminDashboard() {
+  return apiRequest('/api/admin/dashboard');
+}
+
+/**
+ * Get all products (admin)
+ */
+export async function getAdminProducts() {
+  return apiRequest('/api/admin/products');
+}
+
+/**
+ * Get all orders (admin)
+ */
+export async function getAdminOrders() {
+  return apiRequest('/api/admin/orders');
+}
+
+/**
+ * Get all clients (admin)
+ */
+export async function getAdminClients() {
+  return apiRequest('/api/admin/clients');
+}
+
+/**
+ * Update order status (admin)
+ */
+export async function updateOrderStatus(orderId, status) {
+  return apiRequest(`/api/admin/orders/${orderId}/status`, {
+    method: 'PUT',
+    body: JSON.stringify({ status }),
+  });
 }

@@ -72,8 +72,8 @@ const Brands = () => {
           </h1>
           <div className="w-24 h-0.5 bg-gold mx-auto mb-4 md:mb-6"></div>
           <p className="text-stone max-w-2xl mx-auto text-sm md:text-base px-4">
-            Découvrez notre sélection de {brandsWithProducts.length} marques coréennes 
-            premium, reconnues pour leur innovation et leur efficacité.
+            Explorez l'univers de la K-Beauty à travers une sélection de marques 
+            coréennes reconnues pour leur innovation et leur efficacité.
           </p>
         </div>
 

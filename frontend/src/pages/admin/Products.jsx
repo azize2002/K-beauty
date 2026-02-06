@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { 
   Package, 
   Plus, 
@@ -9,9 +9,12 @@ import {
   Star,
   Sparkles,
   Search,
-  Percent
+  Percent,
+  ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+
+const API_URL = process.env.REACT_APP_API_URL || '';
 
 const AdminProducts = () => {
   const { isAuthenticated, isAdmin, token, loading } = useAuth();
@@ -59,7 +62,7 @@ const AdminProducts = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch('' + process.env.REACT_APP_API_URL + '/api/admin/products', {
+      const res = await fetch(`${API_URL}/api/admin/products`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) {
@@ -114,7 +117,7 @@ const AdminProducts = () => {
     }
 
     try {
-      const res = await fetch('' + process.env.REACT_APP_API_URL + '/api/admin/products', {
+      const res = await fetch(`${API_URL}/api/admin/products`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -168,7 +171,7 @@ const AdminProducts = () => {
     setError('');
 
     try {
-      const res = await fetch(`' + process.env.REACT_APP_API_URL + '/api/admin/products/${selectedProduct.id}`, {
+      const res = await fetch(`${API_URL}/api/admin/products/${selectedProduct.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -204,7 +207,7 @@ const AdminProducts = () => {
 
   const handleDeleteProduct = async () => {
     try {
-      const res = await fetch(`' + process.env.REACT_APP_API_URL + '/api/admin/products/${selectedProduct.id}`, {
+      const res = await fetch(`${API_URL}/api/admin/products/${selectedProduct.id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -222,7 +225,7 @@ const AdminProducts = () => {
   // TOGGLE BESTSELLER
   const toggleBestseller = async (product) => {
     try {
-      await fetch(`' + process.env.REACT_APP_API_URL + '/api/admin/products/${product.id}/toggle-bestseller`, {
+      await fetch(`${API_URL}/api/admin/products/${product.id}/toggle-bestseller`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -235,7 +238,7 @@ const AdminProducts = () => {
   // TOGGLE NEW
   const toggleNew = async (product) => {
     try {
-      await fetch(`' + process.env.REACT_APP_API_URL + '/api/admin/products/${product.id}/toggle-new`, {
+      await fetch(`${API_URL}/api/admin/products/${product.id}/toggle-new`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -248,7 +251,7 @@ const AdminProducts = () => {
   // TOGGLE STOCK
   const toggleStock = async (product) => {
     try {
-      await fetch(`' + process.env.REACT_APP_API_URL + '/api/admin/products/${product.id}/toggle-stock`, {
+      await fetch(`${API_URL}/api/admin/products/${product.id}/toggle-stock`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -279,6 +282,15 @@ const AdminProducts = () => {
   return (
     <div className="min-h-screen bg-ivory py-8 px-6">
       <div className="max-w-7xl mx-auto">
+        {/* Back link */}
+        <Link 
+          to="/admin" 
+          className="inline-flex items-center gap-2 text-stone hover:text-gold transition-colors mb-6"
+        >
+          <ArrowLeft size={18} />
+          <span>Retour au dashboard</span>
+        </Link>
+
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
@@ -349,7 +361,7 @@ const AdminProducts = () => {
                 {/* Price */}
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg font-bold text-gold">{product.price_tnd} TND</span>
-                  {product.discount_percentage > 0 && (
+                  {product.discount_percentage > 0 && product.original_price_tnd > 0 && (
                     <span className="text-sm text-stone line-through">{product.original_price_tnd} TND</span>
                   )}
                 </div>
